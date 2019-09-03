@@ -1,3 +1,3 @@
 # openPFGE
 
-Low cost and open source Pulse Field Gel Electrophoresis
+Low cost and open source pulsed-field gel electrophoresis [PFGE] equipment
