@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">openPFGE</string>
+    <string name="splash_text_1">open</string>
+    <string name="splash_text_2">PFGE</string>
+</resources>
