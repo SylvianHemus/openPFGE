@@ -1,1 +1,5 @@
+# Circuit exports
 Circuit/Export
+
+# App Builds
+App\ Android/**/build
