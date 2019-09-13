@@ -9,7 +9,6 @@ import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.util.Log;
-import android.view.KeyEvent;
 import android.view.View;
 import android.view.Window;
 import android.widget.Button;
@@ -48,11 +47,14 @@ public class pfgeConfig extends AppCompatActivity implements ItemPickerDialogFra
     Switch switchRamp;
     Switch switchLcdActive;
     Switch switchLcdBacklight;
+    Switch switchBufferTemperatureAutomaticControl;
     LinearLayout wrapWop;
     LinearLayout wrapRampStart;
     LinearLayout wrapRampEnd;
     LinearLayout wrapRampDuration;
     LinearLayout wrapAutoWop;
+    LinearLayout wrapBufferTemperatureUpdateSetpoint;
+    LinearLayout wrapLcdUpdateInterval;
     EditText editTextAngle;
     EditText editTextWop;
     EditText editTextRampStart;
@@ -60,6 +62,7 @@ public class pfgeConfig extends AppCompatActivity implements ItemPickerDialogFra
     EditText editTextRampDuration;
     EditText editTextLcdUpdateInterval;
     EditText editTextBufferTemperatureUpdateInterval;
+    EditText editTextBufferTemperatureSetpoint;
     TextView textViewAutoWop;
     TextView textViewBufferTemperature;
     TextView textViewHasRun;
@@ -135,6 +138,8 @@ public class pfgeConfig extends AppCompatActivity implements ItemPickerDialogFra
         params.put("lb", switchLcdBacklight.isChecked() ? "t" : "f");
         params.put("lui", editTextLcdUpdateInterval.getText().toString());
         params.put("bui", editTextBufferTemperatureUpdateInterval.getText().toString());
+        params.put("btac", switchBufferTemperatureAutomaticControl.isChecked() ? "t" : "f");
+        params.put("bts", editTextBufferTemperatureSetpoint.getText().toString());
         requestMethodWithParams(methodSet, params);
     }
 
@@ -326,6 +331,12 @@ public class pfgeConfig extends AppCompatActivity implements ItemPickerDialogFra
                 case "bui":
                     editTextBufferTemperatureUpdateInterval.setText(entry.getValue());
                     break;
+                case "btac":
+                    switchBufferTemperatureAutomaticControl.setChecked("t".equals(entry.getValue()));
+                    break;
+                case "bts":
+                    editTextBufferTemperatureSetpoint.setText(entry.getValue());
+                    break;
                 default:
                     break;
             }
@@ -340,6 +351,7 @@ public class pfgeConfig extends AppCompatActivity implements ItemPickerDialogFra
     // UI
 
     private void showHideUI() {
+        // switch ramp
         if (switchRamp.isChecked()) {
             wrapWop.setVisibility(View.GONE);
             wrapRampStart.setVisibility(View.VISIBLE);
@@ -352,6 +364,20 @@ public class pfgeConfig extends AppCompatActivity implements ItemPickerDialogFra
             wrapRampEnd.setVisibility(View.GONE);
             wrapRampDuration.setVisibility(View.GONE);
             wrapAutoWop.setVisibility(View.GONE);
+        }
+        // Buffer temperature
+        if (switchBufferTemperatureAutomaticControl.isChecked()) {
+            wrapBufferTemperatureUpdateSetpoint.setVisibility(View.VISIBLE);
+        } else {
+            wrapBufferTemperatureUpdateSetpoint.setVisibility(View.GONE);
+        }
+        // LCD
+        if (switchLcdActive.isChecked()) {
+            switchLcdBacklight.setVisibility(View.VISIBLE);
+            wrapLcdUpdateInterval.setVisibility(View.VISIBLE);
+        } else {
+            switchLcdBacklight.setVisibility(View.GONE);
+            wrapLcdUpdateInterval.setVisibility(View.GONE);
         }
     }
 
@@ -427,12 +453,15 @@ public class pfgeConfig extends AppCompatActivity implements ItemPickerDialogFra
         switchRamp = (Switch) findViewById(R.id.switchRamp);
         switchLcdActive = (Switch) findViewById(R.id.switchLcdActive);
         switchLcdBacklight = (Switch) findViewById(R.id.switchLcdBacklight);
+        switchBufferTemperatureAutomaticControl = (Switch) findViewById(R.id.switchBufferTemperatureAutomaticControl);
 
         wrapWop = (LinearLayout) findViewById(R.id.wrapWop);
         wrapRampStart = (LinearLayout) findViewById(R.id.wrapRampStart);
         wrapRampEnd = (LinearLayout) findViewById(R.id.wrapRampEnd);
         wrapRampDuration = (LinearLayout) findViewById(R.id.wrapRampDuration);
         wrapAutoWop = (LinearLayout) findViewById(R.id.wrapAutoWop);
+        wrapBufferTemperatureUpdateSetpoint = (LinearLayout) findViewById(R.id.wrapBufferTemperatureUpdateSetpoint);
+        wrapLcdUpdateInterval = (LinearLayout) findViewById(R.id.wrapLcdUpdateInterval);
 
         editTextAngle = findViewById(R.id.editTextAngle);
         editTextWop = findViewById(R.id.editTextWop);
@@ -441,6 +470,7 @@ public class pfgeConfig extends AppCompatActivity implements ItemPickerDialogFra
         editTextRampDuration = findViewById(R.id.editTextRampDuration);
         editTextLcdUpdateInterval = findViewById(R.id.editTextLcdUpdateInterval);
         editTextBufferTemperatureUpdateInterval = findViewById(R.id.editTextBufferTemperatureUpdateInterval);
+        editTextBufferTemperatureSetpoint =findViewById(R.id.editTextBufferTemperatureUpdateSetpoint);
 
         final FloatingActionButton floatingActionButtonGet = findViewById(R.id.floatingActionButtonGet);
         final FloatingActionButton floatingActionButtonSet = findViewById(R.id.floatingActionButtonSet);
@@ -454,11 +484,15 @@ public class pfgeConfig extends AppCompatActivity implements ItemPickerDialogFra
 
         textViewDeviceName.setText("Device: " + bluetoothName);
 
-        switchRamp.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+        CompoundButton.OnCheckedChangeListener coccl=new CompoundButton.OnCheckedChangeListener() {
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
                 showHideUI();
             }
-        });
+        };
+
+        switchRamp.setOnCheckedChangeListener(coccl);
+        switchLcdActive.setOnCheckedChangeListener(coccl);
+        switchBufferTemperatureAutomaticControl.setOnCheckedChangeListener(coccl);
 
         floatingActionButtonGet.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
@@ -483,37 +517,6 @@ public class pfgeConfig extends AppCompatActivity implements ItemPickerDialogFra
                 disconnectDevice();
             }
         });
-
-        CompoundButton.OnCheckedChangeListener occl = new CompoundButton.OnCheckedChangeListener() {
-            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                requestMethodSet();
-                showHideUI();
-            }
-        };
-
-        switchOnOff.setOnCheckedChangeListener(occl);
-        switchPause.setOnCheckedChangeListener(occl);
-        switchRamp.setOnCheckedChangeListener(occl);
-        switchLcdActive.setOnCheckedChangeListener(occl);
-        switchLcdBacklight.setOnCheckedChangeListener(occl);
-
-        View.OnKeyListener okl = new View.OnKeyListener() {
-            public boolean onKey(View v, int keyCode, KeyEvent event) {
-                if ((event.getAction() == KeyEvent.ACTION_DOWN) && (keyCode == KeyEvent.KEYCODE_ENTER)) {
-                    requestMethodSet();
-                    return true;
-                }
-                return false;
-            }
-        };
-
-        editTextAngle.setOnKeyListener(okl);
-        editTextWop.setOnKeyListener(okl);
-        editTextRampStart.setOnKeyListener(okl);
-        editTextRampEnd.setOnKeyListener(okl);
-        editTextRampDuration.setOnKeyListener(okl);
-        editTextLcdUpdateInterval.setOnKeyListener(okl);
-        editTextBufferTemperatureUpdateInterval.setOnKeyListener(okl);
 
         showHideUI();
     }

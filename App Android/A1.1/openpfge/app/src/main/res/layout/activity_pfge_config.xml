@@ -300,8 +300,19 @@
 
         </LinearLayout>
 
+        <Switch
+            android:id="@+id/switchBufferTemperatureAutomaticControl"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+
+            android:paddingTop="8dp"
+            android:paddingBottom="8dp"
+            android:showText="false"
+            android:text="Buffer temperature automatic control" />
+
 
         <LinearLayout
+            android:id="@+id/wrapBufferTemperatureUpdateSetpoint"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:gravity="center_vertical"
@@ -326,16 +337,6 @@
                 android:textAlignment="center" />
 
         </LinearLayout>
-
-        <Switch
-            android:id="@+id/switchBufferTemperatureAutomaticControl"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-
-            android:paddingTop="8dp"
-            android:paddingBottom="8dp"
-            android:showText="false"
-            android:text="Buffer temperature automatic control" />
 
         <TextView
             android:id="@+id/textView2"
@@ -373,6 +374,7 @@
             android:text="LCD Backlught" />
 
         <LinearLayout
+            android:id="@+id/wrapLcdUpdateInterval"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:gravity="center_vertical"
