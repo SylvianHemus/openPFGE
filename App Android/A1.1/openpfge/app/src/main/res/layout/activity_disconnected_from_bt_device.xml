@@ -26,9 +26,10 @@
             android:paddingRight="8dp"
             android:text="Disconnected from bluetooth device:"
             android:textAlignment="center"
-            android:textColor="#e5efc1"
+            android:textColor="@color/colorTextDefault"
             android:textSize="14sp"
             android:textStyle="bold" />
+
         <TextView
             android:id="@+id/textViewBtName"
             android:layout_width="match_parent"
@@ -36,7 +37,7 @@
             android:paddingRight="8dp"
             android:text="-"
             android:textAlignment="center"
-            android:textColor="#e5efc1"
+            android:textColor="@color/colorTextDefault"
             android:textSize="14sp"
             android:textStyle="bold" />
 
@@ -47,7 +48,7 @@
             android:paddingRight="8dp"
             android:text="\nTap to try again\nLong tap to select a new device"
             android:textAlignment="center"
-            android:textColor="#e5efc1"
+            android:textColor="@color/colorTextDefault"
             android:textSize="14sp"
             android:textStyle="bold" />
     </LinearLayout>

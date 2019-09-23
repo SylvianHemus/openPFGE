@@ -23,11 +23,12 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:paddingRight="8dp"
-                android:text="Connecting to bluetooth device:"
+                android:text="Connecting to bluetooth device"
                 android:textAlignment="center"
-                android:textColor="#e5efc1"
+                android:textColor="@color/colorTextDefault"
                 android:textSize="14sp"
                 android:textStyle="bold" />
+
             <TextView
                 android:id="@+id/textViewBtName"
                 android:layout_width="match_parent"
@@ -35,18 +36,20 @@
                 android:paddingRight="8dp"
                 android:text="-"
                 android:textAlignment="center"
-                android:textColor="#e5efc1"
-                android:textSize="14sp"
+                android:textColor="@color/colorTextDefault"
+                android:textSize="24sp"
                 android:textStyle="bold" />
             <RelativeLayout
                 android:id="@+id/loadingPanel"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:gravity="center" >
-            <ProgressBar
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:indeterminate="true" />
+
+                <ProgressBar
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:indeterminate="true"
+                    android:indeterminateTint="@color/colorTextDefault" />
             </RelativeLayout>
         </LinearLayout>
 

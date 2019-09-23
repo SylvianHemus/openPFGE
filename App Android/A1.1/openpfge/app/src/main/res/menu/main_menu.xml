@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:compat="http://schemas.android.com/apk/res-auto">
+    <item
+        android:id="@+id/sync"
+        android:icon="@android:drawable/stat_notify_sync_noanim"
+        android:title="Sync from device"
+        compat:showAsAction="always" />
+    <item
+        android:id="@+id/set"
+        android:icon="@android:drawable/stat_sys_upload"
+        android:title="Send to device"
+        compat:showAsAction="always" />
+</menu>

@@ -20,7 +20,7 @@
             android:paddingRight="8dp"
             android:text="Select bluetooth device"
             android:textAlignment="center"
-            android:textColor="#e5efc1"
+            android:textColor="@color/colorTextDefault"
             android:textSize="14sp"
             android:textStyle="bold" />
 

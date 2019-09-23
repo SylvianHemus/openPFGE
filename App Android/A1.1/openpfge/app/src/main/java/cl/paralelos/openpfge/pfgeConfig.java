@@ -9,8 +9,10 @@ import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
-import android.view.Window;
 import android.widget.Button;
 import android.widget.CompoundButton;
 import android.widget.EditText;
@@ -21,7 +23,6 @@ import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
-import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.harrysoft.androidbluetoothserial.BluetoothManager;
 import com.harrysoft.androidbluetoothserial.BluetoothSerialDevice;
 import com.harrysoft.androidbluetoothserial.SimpleBluetoothDeviceInterface;
@@ -82,10 +83,11 @@ public class pfgeConfig extends AppCompatActivity implements ItemPickerDialogFra
     final int REQUEST_ENABLE_BT = 0;
     final String settingsBluetoothAdress = "bta";
     final String settingsBluetoothName = "btn";
-    final String methodGet = "g";
+    final String methodSync = "y";
     final String methodSet = "s";
     final String methodWho = "w";
     final String methodAutomaticEnd = "a";
+    final String methodUnknown = "u";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -94,9 +96,6 @@ public class pfgeConfig extends AppCompatActivity implements ItemPickerDialogFra
         firmwareVersion = Integer.parseInt(getResources().getString(R.string.app_firmware_version));
         firmwareSubversion = Integer.parseInt(getResources().getString(R.string.app_firmware_subversion));
         minFirmwareVersionSupported = Integer.parseInt(getResources().getString(R.string.app_firmware_min_firmware_version_supported));
-
-        requestWindowFeature(Window.FEATURE_NO_TITLE);
-        getSupportActionBar().hide();
 
         settings = this.getSharedPreferences("bluetoothDevice", Context.MODE_PRIVATE);
         settingsEditor=settings.edit();
@@ -121,8 +120,6 @@ public class pfgeConfig extends AppCompatActivity implements ItemPickerDialogFra
         }
     }
 
-    // BT COM
-
     private void requestMethodSet() {
         Map<String, String> params = new HashMap<String, String>();
         params.put("o", switchOnOff.isChecked() ? "t" : "f");
@@ -141,6 +138,10 @@ public class pfgeConfig extends AppCompatActivity implements ItemPickerDialogFra
         params.put("btac", switchBufferTemperatureAutomaticControl.isChecked() ? "t" : "f");
         params.put("bts", editTextBufferTemperatureSetpoint.getText().toString());
         requestMethodWithParams(methodSet, params);
+    }
+
+    private void requestMethodSync() {
+        requestMethod(methodSync);
     }
 
     private void requestMethod(String method) {
@@ -233,7 +234,7 @@ public class pfgeConfig extends AppCompatActivity implements ItemPickerDialogFra
                 selectBluetoothDevice();
                 return;
             }
-            requestMethod(methodGet);
+            requestMethod(methodSync);
             setMainView();
         }
         if (firmwareVersion == 0) {
@@ -245,25 +246,21 @@ public class pfgeConfig extends AppCompatActivity implements ItemPickerDialogFra
             selectBluetoothDevice();
             return;
         }
-        if (response.get("m").compareTo(methodSet) == 0 && firmwareVersion != 0) {
-            if (response.get("res").compareTo("ok") != 0) {
-                Toast.makeText(getApplicationContext(), "SET597029366810 | Bad response", Toast.LENGTH_LONG).show();
-                return;
-            }
+        if (response.get("m").compareTo(methodSet) == 0) {
+            setMainView();
             processResponse(response);
             Toast.makeText(getApplicationContext(), "SET & SYNC done at " + getCurrentDate(null), Toast.LENGTH_LONG).show();
         }
-        if (response.get("m").compareTo(methodGet) == 0 && firmwareVersion != 0) {
+        if (response.get("m").compareTo(methodSync) == 0) {
+            setMainView();
             processResponse(response);
             Toast.makeText(getApplicationContext(), "SYNC done at " + getCurrentDate(null), Toast.LENGTH_LONG).show();
         }
-        if (response.get("m").compareTo(methodAutomaticEnd) == 0 && firmwareVersion != 0) {
-            if (response.get("res").compareTo("ok") != 0) {
-                Toast.makeText(getApplicationContext(), "Automatic end | Bad response", Toast.LENGTH_LONG).show();
-                return;
-            } else{
-                setMainView();
-            }
+        if (response.get("m").compareTo(methodAutomaticEnd) == 0) {
+            processResponse(response);
+        }
+        if (response.get("m").compareTo(methodUnknown) ==  0) {
+            Toast.makeText(getApplicationContext(), "Unkown method requested", Toast.LENGTH_LONG).show();
         }
     }
 
@@ -472,8 +469,6 @@ public class pfgeConfig extends AppCompatActivity implements ItemPickerDialogFra
         editTextBufferTemperatureUpdateInterval = findViewById(R.id.editTextBufferTemperatureUpdateInterval);
         editTextBufferTemperatureSetpoint =findViewById(R.id.editTextBufferTemperatureUpdateSetpoint);
 
-        final FloatingActionButton floatingActionButtonGet = findViewById(R.id.floatingActionButtonGet);
-        final FloatingActionButton floatingActionButtonSet = findViewById(R.id.floatingActionButtonSet);
         final Button buttonChangeDevice = findViewById(R.id.buttonChangeDevice);
         final Button buttonDisconnectDevice = findViewById(R.id.buttonDisconnectDevice);
 
@@ -494,18 +489,6 @@ public class pfgeConfig extends AppCompatActivity implements ItemPickerDialogFra
         switchLcdActive.setOnCheckedChangeListener(coccl);
         switchBufferTemperatureAutomaticControl.setOnCheckedChangeListener(coccl);
 
-        floatingActionButtonGet.setOnClickListener(new View.OnClickListener() {
-            public void onClick(View v) {
-                requestMethod(methodGet);
-            }
-        });
-
-        floatingActionButtonSet.setOnClickListener(new View.OnClickListener() {
-            public void onClick(View v) {
-                requestMethodSet();
-            }
-        });
-
         buttonChangeDevice.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
                 selectBluetoothDevice();
@@ -519,6 +502,32 @@ public class pfgeConfig extends AppCompatActivity implements ItemPickerDialogFra
         });
 
         showHideUI();
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        MenuInflater inflater = getMenuInflater();
+        inflater.inflate(R.menu.main_menu, menu);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()) {
+            case R.id.sync:
+                requestMethodSync();
+                return true;
+
+            case R.id.set:
+                requestMethodSet();
+                return true;
+
+            default:
+                // If we got here, the user's action was not recognized.
+                // Invoke the superclass to handle it.
+                return super.onOptionsItemSelected(item);
+
+        }
     }
 
     private final BroadcastReceiver mReceiver = new BroadcastReceiver() {

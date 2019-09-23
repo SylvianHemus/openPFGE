@@ -71,6 +71,11 @@ char tmpBuffer[tmpBufferSize]; // temporal
 bool autoEnd = false; // whether the program has automaticlly ended
 #define maxIntervalUpdate 60 // 60 seconds for maximum update interval
 int bufferTemperatureUpdateInterval = 10; // buffer temperature update interval (seconds)
+#define methodSync "y"
+#define methodSet "s"
+#define methodWho "w"
+#define methodAutomaticEnd "a"
+#define methodUnknown "u"
 
 // timers
 Chrono runTimer(Chrono::SECONDS); // running timer
@@ -137,20 +142,23 @@ void checkSerial() {
 
     serialDebugWrite("method | " + method);
 
-    if (method == "w") {
-      sprintf(tmpBuffer, "m=w@fv=%d@fs=%d", firmwareVersion, firmwareSubversion);
+    if (method == methodWho) {
+      sprintf(tmpBuffer, "m=%s@fv=%d@fs=%d",methodWho, firmwareVersion, firmwareSubversion);
       btSendMessage(tmpBuffer);
-    } else if (method == "g") {
+    } else if (method == methodSync) {
       encodeCurrent();
-      sprintf(tmpBuffer + strlen(tmpBuffer), "@m=g");
+      sprintf(tmpBuffer + strlen(tmpBuffer), "@m=%s", methodSync);
       btSendMessage(tmpBuffer);
-    } else if (method == "a") {
-      sprintf(tmpBuffer, "m=a@res=ok");
+    } else if (method == methodAutomaticEnd) {
+      sprintf(tmpBuffer, "m=%s",methodAutomaticEnd);
       btSendMessage(tmpBuffer);
-    } else if (method == "s") {
+    } else if (method == methodSet) {
       setParams();
+      encodeCurrent();
+      sprintf(tmpBuffer + strlen(tmpBuffer), "@m=%s", methodSet);
+      btSendMessage(tmpBuffer);
     } else {
-      sprintf(tmpBuffer, "method=u");
+      sprintf(tmpBuffer, "m=%s", methodUnknown);
       btSendMessage(tmpBuffer);
     }
   }
@@ -197,9 +205,6 @@ void setParams() {
     }
     pch = strtok(NULL, "@=");
   }
-  encodeCurrent();
-  sprintf(tmpBuffer + strlen(tmpBuffer), "@m=s@res=ok");
-  btSendMessage(tmpBuffer);
 }
 
 void nextMotorMove() {

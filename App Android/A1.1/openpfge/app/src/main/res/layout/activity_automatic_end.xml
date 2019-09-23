@@ -21,7 +21,7 @@
             android:paddingRight="8dp"
             android:text="System has automaticlly ended\n\nTap to continue"
             android:textAlignment="center"
-            android:textColor="#e5efc1"
+            android:textColor="@color/colorTextDefault"
             android:textSize="14sp"
             android:textStyle="bold" />
 
