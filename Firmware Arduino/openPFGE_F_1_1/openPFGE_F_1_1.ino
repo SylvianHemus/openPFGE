@@ -41,6 +41,7 @@ int lcdUpdateInfoInterval = 2; // lcd update info interval (seconds)
 // temperature control
 int bufferTemperature = 0; // current read of buffer temperature
 bool bufferTemperatureAutomaticControl = true; // if temperature of the buffer is automaticlly controlled by the refrigeration system
+bool bufferCoolingOn = false;
 int bufferTemperatureSetpoint = 15; // optimal buffer temperature (°C)
 #define bufferTemperatureSetpointMin 10
 #define bufferTemperatureSetpointMax 30
@@ -49,6 +50,7 @@ int bufferTemperatureSetpoint = 15; // optimal buffer temperature (°C)
 #define fan2Pin 6
 #define peltier1Pin 8
 #define peltier2Pin 7
+#define deltaTemperatureToStartCooling 3
 
 // running parameters
 bool onoff = false; // System on/off
@@ -115,12 +117,10 @@ void setup() {
 
 void loop() {
   // Check whether is there anything at serial
-  checkSerial();
+  loopSerial();
 
   // Make the next motor move
-  if (onoff && !pause) {
-    nextMotorMove();
-  }
+  loopMotor();
 
   // buffer temperature loop
   loopBufferTemperature();
@@ -129,7 +129,7 @@ void loop() {
   loopLcd();
 }
 
-void checkSerial() {
+void loopSerial() {
   if (BT.available())
   {
     inData = requestString();
@@ -143,14 +143,14 @@ void checkSerial() {
     serialDebugWrite("method | " + method);
 
     if (method == methodWho) {
-      sprintf(tmpBuffer, "m=%s@fv=%d@fs=%d",methodWho, firmwareVersion, firmwareSubversion);
+      sprintf(tmpBuffer, "m=%s@fv=%d@fs=%d", methodWho, firmwareVersion, firmwareSubversion);
       btSendMessage(tmpBuffer);
     } else if (method == methodSync) {
       encodeCurrent();
       sprintf(tmpBuffer + strlen(tmpBuffer), "@m=%s", methodSync);
       btSendMessage(tmpBuffer);
     } else if (method == methodAutomaticEnd) {
-      sprintf(tmpBuffer, "m=%s",methodAutomaticEnd);
+      sprintf(tmpBuffer, "m=%s", methodAutomaticEnd);
       btSendMessage(tmpBuffer);
     } else if (method == methodSet) {
       setParams();
@@ -204,6 +204,12 @@ void setParams() {
       bufferTemperatureSetpoint = constrain(stoi(pchv), bufferTemperatureSetpointMin, bufferTemperatureSetpointMax);
     }
     pch = strtok(NULL, "@=");
+  }
+}
+
+void loopMotor() {
+  if (onoff && !pause) {
+    nextMotorMove();
   }
 }
 
@@ -331,6 +337,24 @@ void loopBufferTemperature() {
   if (!bufferTemperatureTimer.isRunning() || bufferTemperatureTimer.hasPassed(bufferTemperatureUpdateInterval)) {
     bufferTemperature = readTemperature();
     bufferTemperatureTimer.restart();
+  }
+  // decide if cooling is needed
+  if (bufferTemperature + deltaTemperatureToStartCooling > bufferTemperatureSetpoint && !bufferCoolingOn) { // start cooling
+    digitalWrite(pumpPin, HIGH);
+    digitalWrite(fan1Pin, HIGH);
+    digitalWrite(fan2Pin, HIGH);
+    digitalWrite(peltier1Pin, HIGH);
+    digitalWrite(peltier2Pin, HIGH);
+    bufferCoolingOn = true;
+  } else { // stop cooling
+    if(bufferCoolingOn) { // just if it is cooling
+      digitalWrite(pumpPin, LOW);
+      digitalWrite(fan1Pin, LOW);
+      digitalWrite(fan2Pin, LOW);
+      digitalWrite(peltier1Pin, LOW);
+      digitalWrite(peltier2Pin, LOW);
+      bufferCoolingOn = false;
+    }
   }
 }
 

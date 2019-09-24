@@ -28,14 +28,14 @@
             android:layout_height="wrap_content"
             android:paddingBottom="8dp"
             android:text="Main Config"
-            android:textColor="@color/colorAccent"
+            android:textColor="@color/colorSectionTitle"
             android:textSize="18sp"
             android:textStyle="bold" />
 
         <View
             android:layout_width="match_parent"
             android:layout_height="2dp"
-            android:background="#c0c0c0"/>
+            android:background="@color/colorSectionSeparator" />
 
         <Switch
             android:id="@+id/switchRunning"
@@ -263,14 +263,14 @@
             android:paddingTop="16dp"
             android:paddingBottom="8dp"
             android:text="Temperature control"
-            android:textColor="@color/colorAccent"
+            android:textColor="@color/colorSectionTitle"
             android:textSize="18sp"
             android:textStyle="bold" />
 
         <View
             android:layout_width="match_parent"
             android:layout_height="2dp"
-            android:background="#c0c0c0"/>
+            android:background="@color/colorSectionSeparator" />
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -345,14 +345,14 @@
             android:paddingTop="16dp"
             android:paddingBottom="8dp"
             android:text="Deep Config"
-            android:textColor="@color/colorAccent"
+            android:textColor="@color/colorSectionTitle"
             android:textSize="18sp"
             android:textStyle="bold" />
 
         <View
             android:layout_width="match_parent"
             android:layout_height="2dp"
-            android:background="#c0c0c0"/>
+            android:background="@color/colorSectionSeparator" />
 
         <Switch
             android:id="@+id/switchLcdActive"
