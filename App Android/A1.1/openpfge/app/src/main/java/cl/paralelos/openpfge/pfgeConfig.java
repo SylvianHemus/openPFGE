@@ -64,6 +64,7 @@ public class pfgeConfig extends AppCompatActivity implements ItemPickerDialogFra
     EditText editTextLcdUpdateInterval;
     EditText editTextBufferTemperatureUpdateInterval;
     EditText editTextBufferTemperatureSetpoint;
+    EditText editTextBufferTemperatureMaxError;
     TextView textViewAutoWop;
     TextView textViewBufferTemperature;
     TextView textViewHasRun;
@@ -137,6 +138,7 @@ public class pfgeConfig extends AppCompatActivity implements ItemPickerDialogFra
         params.put("bui", editTextBufferTemperatureUpdateInterval.getText().toString());
         params.put("btac", switchBufferTemperatureAutomaticControl.isChecked() ? "t" : "f");
         params.put("bts", editTextBufferTemperatureSetpoint.getText().toString());
+        params.put("btm", editTextBufferTemperatureMaxError.getText().toString());
         requestMethodWithParams(methodSet, params);
     }
 
@@ -157,6 +159,7 @@ public class pfgeConfig extends AppCompatActivity implements ItemPickerDialogFra
         }
         Log.d("Request", finalRequest);
         deviceInterface.sendMessage(finalRequest);
+        Toast.makeText(getApplicationContext(), "Requesting "+method+" method", Toast.LENGTH_LONG).show();
     }
 
     private void connectDevice() {
@@ -334,6 +337,9 @@ public class pfgeConfig extends AppCompatActivity implements ItemPickerDialogFra
                 case "bts":
                     editTextBufferTemperatureSetpoint.setText(entry.getValue());
                     break;
+                case "btm":
+                    editTextBufferTemperatureMaxError.setText(entry.getValue());
+                    break;
                 default:
                     break;
             }
@@ -468,6 +474,7 @@ public class pfgeConfig extends AppCompatActivity implements ItemPickerDialogFra
         editTextLcdUpdateInterval = findViewById(R.id.editTextLcdUpdateInterval);
         editTextBufferTemperatureUpdateInterval = findViewById(R.id.editTextBufferTemperatureUpdateInterval);
         editTextBufferTemperatureSetpoint =findViewById(R.id.editTextBufferTemperatureUpdateSetpoint);
+        editTextBufferTemperatureMaxError =findViewById(R.id.editTextBufferTemperatureMaxError);
 
         final Button buttonChangeDevice = findViewById(R.id.buttonChangeDevice);
         final Button buttonDisconnectDevice = findViewById(R.id.buttonDisconnectDevice);
@@ -477,7 +484,7 @@ public class pfgeConfig extends AppCompatActivity implements ItemPickerDialogFra
         textViewHasRun = findViewById(R.id.textViewHasRun);
         textViewDeviceName = findViewById(R.id.textViewDeviceName);
 
-        textViewDeviceName.setText("Device: " + bluetoothName);
+        textViewDeviceName.setText("Device name: " + bluetoothName);
 
         CompoundButton.OnCheckedChangeListener coccl=new CompoundButton.OnCheckedChangeListener() {
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {

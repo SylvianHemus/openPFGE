@@ -43,14 +43,16 @@ int bufferTemperature = 0; // current read of buffer temperature
 bool bufferTemperatureAutomaticControl = true; // if temperature of the buffer is automaticlly controlled by the refrigeration system
 bool bufferCoolingOn = false;
 int bufferTemperatureSetpoint = 15; // optimal buffer temperature (°C)
+int bufferTemperatureMaxError = 3; // max diference between current buffer temperature and set point allowed before start the cooling system
 #define bufferTemperatureSetpointMin 10
 #define bufferTemperatureSetpointMax 30
+#define bufferTemperatureMaxErrorMin 1
+#define bufferTemperatureMaxErrorMax 10
 #define pumpPin 4
 #define fan1Pin 5
 #define fan2Pin 6
 #define peltier1Pin 8
 #define peltier2Pin 7
-#define deltaTemperatureToStartCooling 3
 
 // running parameters
 bool onoff = false; // System on/off
@@ -202,6 +204,8 @@ void setParams() {
       bufferTemperatureAutomaticControl = stob(pchv);
     } else if (strcmp(pch, "bts") == 0) {
       bufferTemperatureSetpoint = constrain(stoi(pchv), bufferTemperatureSetpointMin, bufferTemperatureSetpointMax);
+    } else if (strcmp(pch, "btm") == 0) {
+      bufferTemperatureMaxError = constrain(stoi(pchv), bufferTemperatureMaxErrorMin, bufferTemperatureMaxErrorMax);
     }
     pch = strtok(NULL, "@=");
   }
@@ -339,7 +343,7 @@ void loopBufferTemperature() {
     bufferTemperatureTimer.restart();
   }
   // decide if cooling is needed
-  if (bufferTemperature + deltaTemperatureToStartCooling > bufferTemperatureSetpoint && !bufferCoolingOn) { // start cooling
+  if (bufferTemperature + bufferTemperatureMaxError > bufferTemperatureSetpoint && !bufferCoolingOn) { // start cooling
     digitalWrite(pumpPin, HIGH);
     digitalWrite(fan1Pin, HIGH);
     digitalWrite(fan2Pin, HIGH);
@@ -433,7 +437,7 @@ void serialDebugWrite(String outputtext) {
 }
 
 void encodeCurrent() {
-  sprintf(tmpBuffer, "o=%s@p=%s@r=%s@a=%d@w=%d@rs=%d@re=%d@rd=%d@aw=%d@bt=%d@hr=%lu@ae=%s@la=%s@lb=%s@lui=%d@bui=%d@btac=%s@bts=%d",
+  sprintf(tmpBuffer, "o=%s@p=%s@r=%s@a=%d@w=%d@rs=%d@re=%d@rd=%d@aw=%d@bt=%d@hr=%lu@ae=%s@la=%s@lb=%s@lui=%d@bui=%d@btac=%s@bts=%d@btm=%d",
           btos(onoff),
           btos(pause),
           btos(ramp),
@@ -451,7 +455,8 @@ void encodeCurrent() {
           lcdUpdateInfoInterval,
           bufferTemperatureUpdateInterval, // end deep config
           btos(bufferTemperatureAutomaticControl),
-          bufferTemperatureSetpoint
+          bufferTemperatureSetpoint,
+          bufferTemperatureMaxError
          );
 }
 

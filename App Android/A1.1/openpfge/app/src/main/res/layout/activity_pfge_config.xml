@@ -44,7 +44,8 @@
             android:layout_height="wrap_content"
             android:paddingTop="8dp"
             android:paddingBottom="8dp"
-            android:text="Running" />
+            android:text="Running"
+            android:tooltipText="Switch On/Off" />
 
         <Switch
             android:id="@+id/switchPause"
@@ -54,7 +55,8 @@
             android:paddingTop="8dp"
             android:paddingBottom="8dp"
             android:showText="false"
-            android:text="Pause" />
+            android:text="Pause"
+            android:tooltipText="Pause On/Off" />
 
         <Switch
             android:id="@+id/switchRamp"
@@ -64,7 +66,8 @@
             android:paddingTop="8dp"
             android:paddingBottom="8dp"
             android:showText="false"
-            android:text="Ramp" />
+            android:text="Ramp"
+            android:tooltipText="Ramp On/Off" />
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -79,7 +82,8 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="2"
                 android:text="Angle [°]"
-                android:textColor="@android:color/background_dark" />
+                android:textColor="@android:color/background_dark"
+                android:tooltipText="Rotation angle" />
 
             <EditText
                 android:id="@+id/editTextAngle"
@@ -106,7 +110,8 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="2"
                 android:text="WOP [s]"
-                android:textColor="@android:color/background_dark" />
+                android:textColor="@android:color/background_dark"
+                android:tooltipText="Wait on position time" />
 
             <EditText
                 android:id="@+id/editTextWop"
@@ -133,7 +138,8 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="2"
                 android:text="Ramp Start [s]"
-                android:textColor="@android:color/background_dark" />
+                android:textColor="@android:color/background_dark"
+                android:tooltipText="Wait on position start time" />
 
             <EditText
                 android:id="@+id/editTextRampStart"
@@ -160,7 +166,8 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="2"
                 android:text="Ramp End [s]"
-                android:textColor="@android:color/background_dark" />
+                android:textColor="@android:color/background_dark"
+                android:tooltipText="Wait on position end time" />
 
             <EditText
                 android:id="@+id/editTextRampEnd"
@@ -187,7 +194,8 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="2"
                 android:text="Ramp Duration [h]"
-                android:textColor="@android:color/background_dark" />
+                android:textColor="@android:color/background_dark"
+                android:tooltipText="Ramp duration time" />
 
             <EditText
                 android:id="@+id/editTextRampDuration"
@@ -214,8 +222,9 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="2"
-                android:text="Auto WOP [s]"
-                android:textColor="@android:color/background_dark" />
+                android:text="Current WOP [s]"
+                android:textColor="@android:color/background_dark"
+                android:tooltipText="Current wait on position time" />
 
             <TextView
                 android:id="@+id/textViewAutoWop"
@@ -243,7 +252,8 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="2"
                 android:text="Has run [hh:mm:ss]"
-                android:textColor="@android:color/background_dark" />
+                android:textColor="@android:color/background_dark"
+                android:tooltipText="Total run time" />
 
             <TextView
                 android:id="@+id/textViewHasRun"
@@ -287,7 +297,8 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="2"
                 android:text="Buffer temperature [°C]"
-                android:textColor="@android:color/background_dark" />
+                android:textColor="@android:color/background_dark"
+                android:tooltipText="Current buffer temperature" />
 
             <TextView
                 android:id="@+id/textViewBufferTemperature"
@@ -309,7 +320,8 @@
             android:paddingTop="8dp"
             android:paddingBottom="8dp"
             android:showText="false"
-            android:text="Buffer temperature automatic control" />
+            android:text="Buffer temperature automatic control"
+            android:tooltipText="Buffer temperature automatic control On/Off"/>
 
 
         <LinearLayout
@@ -325,11 +337,41 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="2"
-                android:text="Buffer temperature setpoint [°C]"
-                android:textColor="@android:color/background_dark" />
+                android:text="Buffer temperature set point [°C]"
+                android:textColor="@android:color/background_dark"
+                android:tooltipText="Buffer temperature set point" />
 
             <EditText
                 android:id="@+id/editTextBufferTemperatureUpdateSetpoint"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:ems="10"
+                android:inputType="number"
+                android:textAlignment="center" />
+
+        </LinearLayout>
+
+
+        <LinearLayout
+            android:id="@+id/wrapBufferTemperatureMaxError"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            >
+
+            <TextView
+                android:id="@+id/textView16"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="2"
+                android:text="Buffer temperature max error [°C]"
+                android:textColor="@android:color/background_dark"
+                android:tooltipText="Buffer temperature max error" />
+
+            <EditText
+                android:id="@+id/editTextBufferTemperatureMaxError"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
@@ -362,7 +404,8 @@
 
             android:paddingTop="8dp"
             android:paddingBottom="8dp"
-            android:text="LCD Active" />
+            android:text="LCD Active"
+            android:tooltipText="LCD On/Off" />
 
 
         <Switch
@@ -372,7 +415,8 @@
 
             android:paddingTop="8dp"
             android:paddingBottom="8dp"
-            android:text="LCD Backlught" />
+            android:text="LCD Backlught"
+            android:tooltipText="LCD Backlight On/Off" />
 
         <LinearLayout
             android:id="@+id/wrapLcdUpdateInterval"
@@ -388,7 +432,8 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="2"
                 android:text="LCD update interval [s]"
-                android:textColor="@android:color/background_dark" />
+                android:textColor="@android:color/background_dark"
+                android:tooltipText="LCD info update interval" />
 
             <EditText
                 android:id="@+id/editTextLcdUpdateInterval"
@@ -414,7 +459,8 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="2"
                 android:text="Buffer temperature update interval [s]"
-                android:textColor="@android:color/background_dark" />
+                android:textColor="@android:color/background_dark"
+                android:tooltipText="Buffer temperature update interval" />
 
             <EditText
                 android:id="@+id/editTextBufferTemperatureUpdateInterval"
@@ -427,6 +473,22 @@
 
         </LinearLayout>
 
+        <TextView
+            android:id="@+id/textView17"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingTop="16dp"
+            android:paddingBottom="8dp"
+            android:text="Device"
+            android:textColor="@color/colorSectionTitle"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="2dp"
+            android:background="@color/colorSectionSeparator" />
+
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -438,7 +500,9 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="Device: unknown"
+                android:paddingTop="8dp"
+                android:paddingBottom="8dp"
+                android:text="Device name: unknown"
                 android:textColor="@android:color/background_dark" />
 
         </LinearLayout>
