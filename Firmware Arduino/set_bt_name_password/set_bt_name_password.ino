@@ -4,17 +4,23 @@
 
 #include <SoftwareSerial.h>
 
-SoftwareSerial BT(10, 11); // TX, RX
+SoftwareSerial BTSerial(10, 11); // TX, RX
 
-#define BTName openPFGE
-#define BTPass 1234
+#define BTName "openPFGE"
+#define BTPass "1234"
 
 void setup()
 {
   Serial.begin(9600);
   Serial.println("Enter AT commands:");
-  BT.begin(38400);
-  if (Serial.available()){
+  BTSerial.begin(38400);
+  //if (BTSerial.available()){
+  /*} else {
+    Serial.println("BT not available");
+    }*/
+}
+
+void loop(){  
     BTSerial.print("AT+NAME=");
     BTSerial.println(BTName);
     BTSerial.print("AT+PSWD=");
@@ -33,9 +39,4 @@ void setup()
     Serial.println("Version:");
     BTSerial.println("AT+VERSION");
     Serial.println(BTSerial.read());
-  } else {
-    Serial.println("BT not available");
-    }
-}
-
-void loop(){}
+  }
