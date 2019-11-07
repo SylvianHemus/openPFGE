@@ -40,7 +40,7 @@ int lcdUpdateInfoInterval = 2; // lcd update info interval (seconds)
 
 // temperature control
 int bufferTemperature = 0; // current read of buffer temperature
-bool bufferTemperatureAutomaticControl = true; // if temperature of the buffer is automaticlly controlled by the refrigeration system
+bool bufferTemperatureAutomaticControl = false; // if temperature of the buffer is automaticlly controlled by the refrigeration system
 bool bufferCoolingOn = false;
 int bufferTemperatureSetpoint = 15; // optimal buffer temperature (°C)
 int bufferTemperatureMaxError = 3; // max diference between current buffer temperature and set point allowed before start the cooling system
@@ -109,6 +109,11 @@ void setup() {
   pinMode(fan2Pin, OUTPUT);
   pinMode(peltier1Pin, OUTPUT);
   pinMode(peltier2Pin, OUTPUT);
+  digitalWrite(pumpPin, LOW);
+  digitalWrite(fan1Pin, LOW);
+  digitalWrite(fan2Pin, LOW);
+  digitalWrite(peltier1Pin, LOW);
+  digitalWrite(peltier2Pin, LOW);
 
   // BT series port initialice (For Mode AT 2)
   BT.begin(9600);
@@ -342,22 +347,25 @@ void loopBufferTemperature() {
     bufferTemperature = readTemperature();
     bufferTemperatureTimer.restart();
   }
-  // decide if cooling is needed
-  if (bufferTemperature + bufferTemperatureMaxError > bufferTemperatureSetpoint && !bufferCoolingOn) { // start cooling
-    digitalWrite(pumpPin, HIGH);
-    digitalWrite(fan1Pin, HIGH);
-    digitalWrite(fan2Pin, HIGH);
-    digitalWrite(peltier1Pin, HIGH);
-    digitalWrite(peltier2Pin, HIGH);
-    bufferCoolingOn = true;
-  } else { // stop cooling
-    if(bufferCoolingOn) { // just if it is cooling
-      digitalWrite(pumpPin, LOW);
-      digitalWrite(fan1Pin, LOW);
-      digitalWrite(fan2Pin, LOW);
-      digitalWrite(peltier1Pin, LOW);
-      digitalWrite(peltier2Pin, LOW);
-      bufferCoolingOn = false;
+
+  if(bufferTemperatureAutomaticControl){
+    // decide if cooling is needed
+    if (bufferTemperature + bufferTemperatureMaxError > bufferTemperatureSetpoint && !bufferCoolingOn) { // start cooling
+      digitalWrite(pumpPin, HIGH);
+      digitalWrite(fan1Pin, HIGH);
+      digitalWrite(fan2Pin, HIGH);
+      digitalWrite(peltier1Pin, HIGH);
+      digitalWrite(peltier2Pin, HIGH);
+      bufferCoolingOn = true;
+    } else { // stop cooling
+      if (bufferCoolingOn) { // just if it is cooling
+        digitalWrite(pumpPin, LOW);
+        digitalWrite(fan1Pin, LOW);
+        digitalWrite(fan2Pin, LOW);
+        digitalWrite(peltier1Pin, LOW);
+        digitalWrite(peltier2Pin, LOW);
+        bufferCoolingOn = false;
+      }
     }
   }
 }
