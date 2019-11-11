@@ -7,7 +7,7 @@
 // libraries
 #include <SoftwareSerial.h>
 #include <Chrono.h>
-#include <Servo.h>
+#include <VarSpeedServo.h>
 #include <Wire.h>
 #include <LiquidCrystal_I2C.h>
 
@@ -20,11 +20,12 @@
 bool serialStarted = false; // serial started?
 
 // motor servo
-Servo servo; // the servo object
+VarSpeedServo servo; // the servo object
 #define servoPin 9 // PWM signal pin
-#define waitForMotorMove 250 // microseconds to wait after send a new position of the servo
 #define servoUsFrom 500 // minimum microseconds // for ds3218
 #define servoUsTo 2500 // maximum microseconds // for ds3218
+#define servoVelocity 50 // 0=full speed, 1-255 slower to faster
+#define waitForMotorMove true // programs wait until motor end moving
 int motorPosition = 0; // store current motor position (-1 = left, 0 = center, 1 = right)
 
 // bluetooth
@@ -59,7 +60,7 @@ bool onoff = false; // System on/off
 bool pause = false; // System paused on/off
 bool ramp = false; // System ramp on/off
 int angle = 120; // Turning angle
-int wop = 2; // between each movement in ramp off mode (seconds)
+int wop = 4; // between each movement in ramp off mode (seconds)
 int wopAuto = 0; // // between each movement in ramp on mode (seconds)
 #define maxWop 1000 // max wop value for ramp start/end (seconds)
 #define maxRampDuration 100 // ramp max duration (hours)
@@ -140,14 +141,14 @@ void loopSerial() {
   if (BT.available())
   {
     inData = requestString();
-    serialDebugWrite("inData | " + inData);
+    //serialDebugWrite("inData | " + inData);
 
     strcpy(tmpBuffer, inData.c_str());
 
     strtok(strtok(tmpBuffer, "@"), "=");
     method = strtok(NULL, "=");
 
-    serialDebugWrite("method | " + method);
+    //serialDebugWrite("method | " + method);
 
     if (method == methodWho) {
       sprintf(tmpBuffer, "m=%s@fv=%d@fs=%d", methodWho, firmwareVersion, firmwareSubversion);
@@ -248,7 +249,7 @@ void setNextWopAuto() {
       // Run end time reached
       centerMotor();
       runTimer.stop();
-      serialDebugWrite("Automatic System Off [Run end time reached]");
+      //serialDebugWrite("Automatic System Off [Run end time reached]");
       autoEnd = true;
     } else {
       wopAuto = map((long) runTimer.elapsed(), (long) 0, (long) rampDuration * 3600, (long) rampStart, (long) (rampEnd + 1)); // +1 to be able to reach the last ramp wop
@@ -264,13 +265,13 @@ void centerMotor() {
 void moveMotor(int finalAngle) {
   servo.attach(servoPin);
   delay(15);
-  servo.writeMicroseconds(map(finalAngle, 0, 180, servoUsFrom, servoUsTo));
-  delay(waitForMotorMove);
+  //servo.writeMicroseconds(map(finalAngle, 0, 180, servoUsFrom, servoUsTo));
+  servo.write(map(finalAngle, 0, 180, servoUsFrom, servoUsTo), servoVelocity, waitForMotorMove);
   servo.detach();
 }
 
 void loopLcd() {
-  if (!lcdTimer.isRunning() | lcdTimer.hasPassed(lcdUpdateInfoInterval)) {
+  if (!lcdTimer.isRunning() || lcdTimer.hasPassed(lcdUpdateInfoInterval)) {
     if (lcdActive) {
       lcd.clear();
       if (lcdBacklight) {
@@ -372,7 +373,7 @@ void loopBufferTemperature() {
 
 void setOnOff(bool newOnOff) {
   if (onoff == newOnOff) {
-    serialDebugWrite("setOnOff | Already in the state ");
+    //serialDebugWrite("setOnOff | Already in the state ");
     return;
   }
   if (newOnOff) {
@@ -390,7 +391,7 @@ void setOnOff(bool newOnOff) {
 
 void setPause(bool newPause) {
   if (pause == newPause) {
-    serialDebugWrite("setPause | Already in the state ");
+    //serialDebugWrite("setPause | Already in the state ");
     return;
   }
   if (newPause) {
@@ -406,7 +407,7 @@ void setPause(bool newPause) {
 
 void setRamp(bool newRamp) {
   if (ramp == newRamp) {
-    serialDebugWrite("setRamp | Already in the state ");
+    //serialDebugWrite("setRamp | Already in the state ");
     return;
   }
   if (onoff) {
@@ -473,7 +474,7 @@ void btSendMessage(String message) {
 }
 
 void btSendMessage(String message, bool newLine) {
-  serialDebugWrite("BT | " + message);
+  //serialDebugWrite("BT | " + message);
   if (newLine) {
     BT.println(message);
   } else {
