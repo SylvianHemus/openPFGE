@@ -40,7 +40,8 @@ SoftwareSerial BT(10, 11); // TX, RX
 Adafruit_SSD1306 display(128, 64, &Wire, -1);
 Chrono displayTimer(Chrono::SECONDS); // Chrono for info update and view change
 bool displayActive = true; // update display info?
-int displayUpdateInfoInterval = 2; // display update info interval (seconds)
+int displayUpdateInfoInterval = 3; // display update info interval (seconds)
+#define oledLineHeight 11
 
 // temperature control
 int bufferTemperature = 0; // current read of buffer temperature
@@ -78,7 +79,7 @@ String method; // switch commands from serial input
 char tmpBuffer[tmpBufferSize]; // temporal
 bool autoEnd = false; // whether the program has automaticlly ended
 #define maxIntervalUpdate 60 // 60 seconds for maximum update interval
-int bufferTemperatureUpdateInterval = 10; // buffer temperature update interval (seconds)
+int bufferTemperatureUpdateInterval = 60; // buffer temperature update interval (seconds)
 #define methodSync "y"
 #define methodSet "s"
 #define methodWho "w"
@@ -96,11 +97,6 @@ void setup() {
   stepTimer.stop();
   bufferTemperatureTimer.stop();
   displayTimer.stop();
-
-  // display
-  if (!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) { // Address 0x3D for 128x64
-    serialDebugWrite(F("SSD1306 allocation failed"));
-  }
 
   // Motor init and center
   centerMotor();
@@ -125,6 +121,14 @@ void setup() {
 
   // debug
   serialDebugWrite("Setup done");
+
+  // display init and splash
+  if (!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) { // Address 0x3D for 128x64
+    serialDebugWrite(F("SSD1306 allocation failed"));
+  }
+  display.clearDisplay();
+  display.setTextColor(SSD1306_WHITE);
+  displaySplash();
 }
 
 void loop() {
@@ -138,7 +142,7 @@ void loop() {
   loopBufferTemperature();
 
   // display loop
-  loopDisplay();
+  loopDisplay(false);
 }
 
 void loopSerial() {
@@ -217,6 +221,20 @@ void setParams() {
     }
     pch = strtok(NULL, "@=");
   }
+
+  display.clearDisplay();
+  display.setTextColor(SSD1306_WHITE);
+
+  display.setTextSize(2);
+  display.setCursor(5, 8);
+  display.println("Parameters");
+  display.setCursor(25, 40);
+  display.println("Updated");
+
+  display.display();
+  delay(500);
+
+  loopDisplay(true);
 }
 
 void loopMotor() {
@@ -272,69 +290,110 @@ void moveMotor(int finalAngle) {
   servo.detach();
 }
 
-void loopDisplay() {
-  if (!displayTimer.isRunning() || displayTimer.hasPassed(displayUpdateInfoInterval)) {
-      display.clearDisplay();
-    if (displayActive) {
-      // todo
-      /*if (autoEnd) {
-        display.print("AUTO END");
-        // Has run
-        display.setCursor(0, 1);
-        display.print(secondsToTime(runTimer.elapsed()));
-      } else {
-        if (lcdView == 0) {
-          // OnOff
-          if (onoff) {
-            if (pause) {
-              display.print("Pause");
-            } else {
-              display.print("On");
-            }
-          } else {
-            display.print("Off");
-          }
-          // Has run
-          display.setCursor(8, 0);
-          display.print(secondsToTime(runTimer.elapsed()));
-          // Ramp
-          display.setCursor(0, 1);
-          display.print("Ramp/");
-          if (ramp) {
-            display.print("On");
-          } else {
-            display.print("Off");
-          }
+void loopDisplay(bool forceUpdate) {
+  if (displayActive && (forceUpdate || !displayTimer.isRunning() || displayTimer.hasPassed(displayUpdateInfoInterval))) {
+    display.clearDisplay();
+    if (autoEnd) {
+      display.setTextSize(2);
+      display.setCursor(10, 0);
+      display.println("automatic");
+      display.setCursor(50, 20);
+      display.println("END");
+      display.setCursor(10, 50);
+      display.println(secondsToTime(runTimer.elapsed()));
+    } else {
+      // OnOff
+      if (onoff) { // system on or paused
+        if (pause) { // system paused
+          display.setTextSize(2);
+          display.setCursor(30, 8);
+          display.println("Paused");
+          display.setCursor(20, 40);
+          display.println(secondsToTime(runTimer.elapsed()));
+        } else { // system on
+          int oledLine = 1;
+          display.setTextSize(1);
+
+          display.setCursor(0, 0);
+          display.print("Running");
           // Angle
-          display.setCursor(9, 1);
-          display.print("Ang/");
-          display.print(angle);
-
-          lcdView = 1;
-        } else if (lcdView == 1) {
-          // Buffer temperature
-          display.print("BT/");
-          display.print(bufferTemperature);
-          display.setCursor(8, 0);
-          display.print("WOP/");
           if (ramp) {
-            display.print(wopAuto);
-            display.setCursor(0, 1);
-            display.print("S/");
-            display.print(rampStart);
-            display.print(" E/");
-            display.print(rampEnd);
-            display.print(" D/");
-            display.print(rampDuration);
+            display.print(" | Angle: ");
           } else {
-            display.print(wop);
+            display.setCursor(0, oledLineHeight * oledLine);
+            oledLine++;
+            display.print("Angle: ");
+          }
+          display.println(angle);
+
+          // Buffer temperature
+          display.setCursor(0, oledLineHeight * oledLine);
+          oledLine++;
+          display.print("BT: ");
+          display.print(bufferTemperature);
+          display.print(" C");
+
+          // Ramp
+          if (ramp) {
+            display.println("Ramp: On");
+          } else {
+            display.setCursor(0, oledLineHeight * oledLine);
+            oledLine++;
+            display.println("Ramp: Off");
           }
 
-          lcdView = 0;
+          // Wop/ramp
+          display.setCursor(0, oledLineHeight * oledLine);
+          oledLine++;
+          if (ramp) {
+            display.print("WOP | Auto: ");
+            display.print(wopAuto);
+            display.println(" s");
+            display.setCursor(0, oledLineHeight * oledLine);
+            oledLine++;
+            display.print("Ramp | Start: ");
+            display.print(rampStart);
+            display.println(" s");
+            display.setCursor(0, oledLineHeight * oledLine);
+            oledLine++;
+            display.print("Ramp | End: ");
+            display.print(rampEnd);
+            display.println(" s");
+            display.setCursor(0, oledLineHeight * oledLine);
+            oledLine++;
+            display.print("Ramp | Duration: ");
+            display.print(rampDuration);
+            display.println(" h");
+          } else {
+            display.print("WOP: ");
+            display.print(wop);
+            display.println(" s");
+          }
         }
-      }*/
-      displayTimer.restart();
+      } else { // system off
+        display.setTextSize(2);
+        display.setCursor(30, 8);
+        display.println("System");
+        display.setCursor(50, 40);
+        display.println("Off");
+      }
     }
+    display.display();
+    displayTimer.restart();
+  }
+}
+
+void displaySplash() {
+  if (displayActive) {
+    display.clearDisplay();
+    display.setTextSize(3);
+    display.setCursor(30, 5);
+    display.println("open");
+    display.setCursor(30, 35);
+    display.println("PFGE");
+    display.display();
+
+    delay(2000);
   }
 }
 
