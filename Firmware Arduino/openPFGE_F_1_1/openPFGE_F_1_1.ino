@@ -3,6 +3,11 @@
 // thermoresistor: GND and A0 (& 10 kohm from Pin A0 to 3.3V && wire 3.3V with AREF on arduino)
 // bluetooth hc-05: RX --> Pin 11 & TX --> Pin 10 (& 5v to power source)
 // LCD/I2C VCC -> 5V / GND -> GND / SDA -> A4 / SCL -> A5
+// Mosfet Pump --> Pin 3
+// Mosfet Fan 1 --> Pin 5
+// Mosfet Fan 2 --> Pin 6
+// Mosfet Peltier 1 --> Pin 7
+// Mosfet Peltier 2 --> Pin 8
 
 // libraries
 #include <SoftwareSerial.h>
@@ -49,11 +54,11 @@ int bufferTemperatureMaxError = 3; // max diference between current buffer tempe
 #define bufferTemperatureSetpointMax 30
 #define bufferTemperatureMaxErrorMin 1
 #define bufferTemperatureMaxErrorMax 10
-#define pumpPin 4
+#define pumpPin 3
 #define fan1Pin 5
 #define fan2Pin 6
-#define peltier1Pin 8
-#define peltier2Pin 7
+#define peltier1Pin 7
+#define peltier2Pin 8
 
 // running parameters
 bool onoff = false; // System on/off
