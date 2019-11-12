@@ -46,8 +46,7 @@ public class pfgeConfig extends AppCompatActivity implements ItemPickerDialogFra
     Switch switchOnOff;
     Switch switchPause;
     Switch switchRamp;
-    Switch switchLcdActive;
-    Switch switchLcdBacklight;
+    Switch switchDisplayActive;
     Switch switchBufferTemperatureAutomaticControl;
     LinearLayout wrapWop;
     LinearLayout wrapRampStart;
@@ -55,13 +54,13 @@ public class pfgeConfig extends AppCompatActivity implements ItemPickerDialogFra
     LinearLayout wrapRampDuration;
     LinearLayout wrapAutoWop;
     LinearLayout wrapBufferTemperatureUpdateSetpoint;
-    LinearLayout wrapLcdUpdateInterval;
+    LinearLayout wrapDisplayUpdateInterval;
     EditText editTextAngle;
     EditText editTextWop;
     EditText editTextRampStart;
     EditText editTextRampEnd;
     EditText editTextRampDuration;
-    EditText editTextLcdUpdateInterval;
+    EditText editTextDisplayUpdateInterval;
     EditText editTextBufferTemperatureUpdateInterval;
     EditText editTextBufferTemperatureSetpoint;
     EditText editTextBufferTemperatureMaxError;
@@ -121,6 +120,7 @@ public class pfgeConfig extends AppCompatActivity implements ItemPickerDialogFra
         }
     }
 
+
     private void requestMethodSet() {
         Map<String, String> params = new HashMap<String, String>();
         params.put("o", switchOnOff.isChecked() ? "t" : "f");
@@ -132,9 +132,8 @@ public class pfgeConfig extends AppCompatActivity implements ItemPickerDialogFra
         params.put("re", editTextRampEnd.getText().toString());
         params.put("rd", editTextRampDuration.getText().toString());
         // deep config
-        params.put("la", switchLcdActive.isChecked() ? "t" : "f");
-        params.put("lb", switchLcdBacklight.isChecked() ? "t" : "f");
-        params.put("lui", editTextLcdUpdateInterval.getText().toString());
+        params.put("da", switchDisplayActive.isChecked() ? "t" : "f");
+        params.put("dui", editTextDisplayUpdateInterval.getText().toString());
         params.put("bui", editTextBufferTemperatureUpdateInterval.getText().toString());
         params.put("btac", switchBufferTemperatureAutomaticControl.isChecked() ? "t" : "f");
         params.put("bts", editTextBufferTemperatureSetpoint.getText().toString());
@@ -319,14 +318,11 @@ public class pfgeConfig extends AppCompatActivity implements ItemPickerDialogFra
                     }
                     break;
                 // deep config
-                case "la":
-                    switchLcdActive.setChecked("t".equals(entry.getValue()));
+                case "da":
+                    switchDisplayActive.setChecked("t".equals(entry.getValue()));
                     break;
-                case "lb":
-                    switchLcdBacklight.setChecked("t".equals(entry.getValue()));
-                    break;
-                case "lui":
-                    editTextLcdUpdateInterval.setText(entry.getValue());
+                case "dui":
+                    editTextDisplayUpdateInterval.setText(entry.getValue());
                     break;
                 case "bui":
                     editTextBufferTemperatureUpdateInterval.setText(entry.getValue());
@@ -374,13 +370,11 @@ public class pfgeConfig extends AppCompatActivity implements ItemPickerDialogFra
         } else {
             wrapBufferTemperatureUpdateSetpoint.setVisibility(View.GONE);
         }
-        // LCD
-        if (switchLcdActive.isChecked()) {
-            switchLcdBacklight.setVisibility(View.VISIBLE);
-            wrapLcdUpdateInterval.setVisibility(View.VISIBLE);
+        // Display
+        if (switchDisplayActive.isChecked()) {
+            wrapDisplayUpdateInterval.setVisibility(View.VISIBLE);
         } else {
-            switchLcdBacklight.setVisibility(View.GONE);
-            wrapLcdUpdateInterval.setVisibility(View.GONE);
+            wrapDisplayUpdateInterval.setVisibility(View.GONE);
         }
     }
 
@@ -454,8 +448,7 @@ public class pfgeConfig extends AppCompatActivity implements ItemPickerDialogFra
         switchOnOff = (Switch) findViewById(R.id.switchRunning);
         switchPause = (Switch) findViewById(R.id.switchPause);
         switchRamp = (Switch) findViewById(R.id.switchRamp);
-        switchLcdActive = (Switch) findViewById(R.id.switchLcdActive);
-        switchLcdBacklight = (Switch) findViewById(R.id.switchLcdBacklight);
+        switchDisplayActive = (Switch) findViewById(R.id.switchDisplayActive);
         switchBufferTemperatureAutomaticControl = (Switch) findViewById(R.id.switchBufferTemperatureAutomaticControl);
 
         wrapWop = (LinearLayout) findViewById(R.id.wrapWop);
@@ -464,14 +457,14 @@ public class pfgeConfig extends AppCompatActivity implements ItemPickerDialogFra
         wrapRampDuration = (LinearLayout) findViewById(R.id.wrapRampDuration);
         wrapAutoWop = (LinearLayout) findViewById(R.id.wrapAutoWop);
         wrapBufferTemperatureUpdateSetpoint = (LinearLayout) findViewById(R.id.wrapBufferTemperatureUpdateSetpoint);
-        wrapLcdUpdateInterval = (LinearLayout) findViewById(R.id.wrapLcdUpdateInterval);
+        wrapDisplayUpdateInterval = (LinearLayout) findViewById(R.id.wrapDisplayUpdateInterval);
 
         editTextAngle = findViewById(R.id.editTextAngle);
         editTextWop = findViewById(R.id.editTextWop);
         editTextRampStart = findViewById(R.id.editTextRampStart);
         editTextRampEnd = findViewById(R.id.editTextRampEnd);
         editTextRampDuration = findViewById(R.id.editTextRampDuration);
-        editTextLcdUpdateInterval = findViewById(R.id.editTextLcdUpdateInterval);
+        editTextDisplayUpdateInterval = findViewById(R.id.editTextDisplayUpdateInterval);
         editTextBufferTemperatureUpdateInterval = findViewById(R.id.editTextBufferTemperatureUpdateInterval);
         editTextBufferTemperatureSetpoint =findViewById(R.id.editTextBufferTemperatureUpdateSetpoint);
         editTextBufferTemperatureMaxError =findViewById(R.id.editTextBufferTemperatureMaxError);
@@ -493,7 +486,7 @@ public class pfgeConfig extends AppCompatActivity implements ItemPickerDialogFra
         };
 
         switchRamp.setOnCheckedChangeListener(coccl);
-        switchLcdActive.setOnCheckedChangeListener(coccl);
+        switchDisplayActive.setOnCheckedChangeListener(coccl);
         switchBufferTemperatureAutomaticControl.setOnCheckedChangeListener(coccl);
 
         buttonChangeDevice.setOnClickListener(new View.OnClickListener() {

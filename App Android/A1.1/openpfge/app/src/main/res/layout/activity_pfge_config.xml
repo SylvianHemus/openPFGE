@@ -398,28 +398,17 @@
             android:background="@color/colorSectionSeparator" />
 
         <Switch
-            android:id="@+id/switchLcdActive"
+            android:id="@+id/switchDisplayActive"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
 
             android:paddingTop="8dp"
             android:paddingBottom="8dp"
-            android:text="LCD Active"
-            android:tooltipText="LCD On/Off" />
-
-
-        <Switch
-            android:id="@+id/switchLcdBacklight"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-
-            android:paddingTop="8dp"
-            android:paddingBottom="8dp"
-            android:text="LCD Backlught"
-            android:tooltipText="LCD Backlight On/Off" />
+            android:text="Display Active"
+            android:tooltipText="Display On/Off" />
 
         <LinearLayout
-            android:id="@+id/wrapLcdUpdateInterval"
+            android:id="@+id/wrapDisplayUpdateInterval"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:gravity="center_vertical"
@@ -431,12 +420,12 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="2"
-                android:text="LCD update interval [s]"
+                android:text="Display update interval [s]"
                 android:textColor="@android:color/background_dark"
-                android:tooltipText="LCD info update interval" />
+                android:tooltipText="Display info update interval" />
 
             <EditText
-                android:id="@+id/editTextLcdUpdateInterval"
+                android:id="@+id/editTextDisplayUpdateInterval"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"

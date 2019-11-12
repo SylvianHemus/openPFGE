@@ -1,0 +1,542 @@
+// connections
+// servo: Pin 9 (& 5v (4.8 - 7.2 V) to power source)
+// thermoresistor: GND and A0 (& 10 kohm from Pin A0 to 3.3V && wire 3.3V with AREF on arduino)
+// bluetooth hc-05: RX --> Pin 11 & TX --> Pin 10 (& 5v to power source)
+// OLED/I2C VCC -> 5V / GND -> GND / SDA -> A4 / SCL -> A5
+// Mosfet Pump --> Pin 3
+// Mosfet Fan 1 --> Pin 5
+// Mosfet Fan 2 --> Pin 6
+// Mosfet Peltier 1 --> Pin 7
+// Mosfet Peltier 2 --> Pin 8
+
+// libraries
+#include <SoftwareSerial.h>
+#include <Chrono.h>
+#include <VarSpeedServo.h>
+#include <Wire.h>
+#include <Adafruit_SSD1306.h>
+
+// firmware
+#define firmwareVersion 1
+#define firmwareSubversion 0
+
+// debug
+#define serialDebug false // should the program outputs the debug by serial port
+bool serialStarted = false; // serial started?
+
+// motor servo
+VarSpeedServo servo; // the servo object
+#define servoPin 9 // PWM signal pin
+#define servoUsFrom 500 // minimum microseconds // for ds3218
+#define servoUsTo 2500 // maximum microseconds // for ds3218
+#define servoVelocity 50 // 0=full speed, 1-255 slower to faster
+#define waitForMotorMove true // programs wait until motor end moving
+int motorPosition = 0; // store current motor position (-1 = left, 0 = center, 1 = right)
+
+// bluetooth
+SoftwareSerial BT(10, 11); // TX, RX
+
+// LCD / I2C
+Adafruit_SSD1306 display(128, 64, &Wire, -1);
+Chrono displayTimer(Chrono::SECONDS); // Chrono for info update and view change
+bool displayActive = true; // update display info?
+int displayUpdateInfoInterval = 2; // display update info interval (seconds)
+
+// temperature control
+int bufferTemperature = 0; // current read of buffer temperature
+bool bufferTemperatureAutomaticControl = false; // if temperature of the buffer is automaticlly controlled by the refrigeration system
+bool bufferCoolingOn = false;
+int bufferTemperatureSetpoint = 15; // optimal buffer temperature (°C)
+int bufferTemperatureMaxError = 3; // max diference between current buffer temperature and set point allowed before start the cooling system
+#define bufferTemperatureSetpointMin 10
+#define bufferTemperatureSetpointMax 30
+#define bufferTemperatureMaxErrorMin 1
+#define bufferTemperatureMaxErrorMax 10
+#define pumpPin 3
+#define fan1Pin 5
+#define fan2Pin 6
+#define peltier1Pin 7
+#define peltier2Pin 8
+
+// running parameters
+bool onoff = false; // System on/off
+bool pause = false; // System paused on/off
+bool ramp = false; // System ramp on/off
+int angle = 120; // Turning angle
+int wop = 4; // between each movement in ramp off mode (seconds)
+int wopAuto = 0; // // between each movement in ramp on mode (seconds)
+#define maxWop 1000 // max wop value for ramp start/end (seconds)
+#define maxRampDuration 100 // ramp max duration (hours)
+int rampStart = 1; // initial time movement in ramp on mode (seconds)
+int rampEnd = 25; // final time movement in ramp on mode (seconds)
+int rampDuration = 24; // ramp time in ramp on mode (hours)
+
+// variables
+String inData; // capture serial inputs
+String method; // switch commands from serial input
+#define tmpBufferSize 100
+char tmpBuffer[tmpBufferSize]; // temporal
+bool autoEnd = false; // whether the program has automaticlly ended
+#define maxIntervalUpdate 60 // 60 seconds for maximum update interval
+int bufferTemperatureUpdateInterval = 10; // buffer temperature update interval (seconds)
+#define methodSync "y"
+#define methodSet "s"
+#define methodWho "w"
+#define methodAutomaticEnd "a"
+#define methodUnknown "u"
+
+// timers
+Chrono runTimer(Chrono::SECONDS); // running timer
+Chrono stepTimer(Chrono::SECONDS); // step timer
+Chrono bufferTemperatureTimer(Chrono::SECONDS); // buffer temperature update timer
+
+void setup() {
+  // Chronos
+  runTimer.stop();
+  stepTimer.stop();
+  bufferTemperatureTimer.stop();
+  displayTimer.stop();
+
+  // display
+  if (!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) { // Address 0x3D for 128x64
+    serialDebugWrite(F("SSD1306 allocation failed"));
+  }
+
+  // Motor init and center
+  centerMotor();
+
+  // thermoresistor
+  analogReference(EXTERNAL); // Connect AREF to 3.3V!
+
+  // temperature control
+  pinMode(pumpPin, OUTPUT);
+  pinMode(fan1Pin, OUTPUT);
+  pinMode(fan2Pin, OUTPUT);
+  pinMode(peltier1Pin, OUTPUT);
+  pinMode(peltier2Pin, OUTPUT);
+  digitalWrite(pumpPin, LOW);
+  digitalWrite(fan1Pin, LOW);
+  digitalWrite(fan2Pin, LOW);
+  digitalWrite(peltier1Pin, LOW);
+  digitalWrite(peltier2Pin, LOW);
+
+  // BT series port initialice (For Mode AT 2)
+  BT.begin(9600);
+
+  // debug
+  serialDebugWrite("Setup done");
+}
+
+void loop() {
+  // Check whether is there anything at serial
+  loopSerial();
+
+  // Make the next motor move
+  loopMotor();
+
+  // buffer temperature loop
+  loopBufferTemperature();
+
+  // display loop
+  loopDisplay();
+}
+
+void loopSerial() {
+  if (BT.available())
+  {
+    inData = requestString();
+    //serialDebugWrite("inData | " + inData);
+
+    strcpy(tmpBuffer, inData.c_str());
+
+    strtok(strtok(tmpBuffer, "@"), "=");
+    method = strtok(NULL, "=");
+
+    //serialDebugWrite("method | " + method);
+
+    if (method == methodWho) {
+      sprintf(tmpBuffer, "m=%s@fv=%d@fs=%d", methodWho, firmwareVersion, firmwareSubversion);
+      btSendMessage(tmpBuffer);
+    } else if (method == methodSync) {
+      encodeCurrent();
+      sprintf(tmpBuffer + strlen(tmpBuffer), "@m=%s", methodSync);
+      btSendMessage(tmpBuffer);
+    } else if (method == methodAutomaticEnd) {
+      sprintf(tmpBuffer, "m=%s", methodAutomaticEnd);
+      btSendMessage(tmpBuffer);
+    } else if (method == methodSet) {
+      setParams();
+      encodeCurrent();
+      sprintf(tmpBuffer + strlen(tmpBuffer), "@m=%s", methodSet);
+      btSendMessage(tmpBuffer);
+    } else {
+      sprintf(tmpBuffer, "m=%s", methodUnknown);
+      btSendMessage(tmpBuffer);
+    }
+  }
+}
+
+void setParams() {
+  strcpy(tmpBuffer, inData.c_str());
+  char * pch;
+  char * pchv;
+  pch = strtok(tmpBuffer, "@=");
+  while (pch != NULL)
+  {
+    pchv = strtok(NULL, "@=");
+    if (strcmp(pch, "o") == 0) {
+      setOnOff(stob(pchv));
+    } else if (strcmp(pch, "p") == 0) {
+      setPause(stob(pchv));
+    } else if (strcmp(pch, "r") == 0) {
+      setRamp(stob(pchv));
+    } else if (strcmp(pch, "a") == 0) {
+      angle = constrain(stoi(pchv), 1, 180);
+    } else if (strcmp(pch, "w") == 0) {
+      wop = constrain(stoi(pchv), 1, maxWop);
+    } else if (strcmp(pch, "rs") == 0) {
+      rampStart = constrain(stoi(pchv), 1, rampEnd - 1);
+    } else if (strcmp(pch, "re") == 0) {
+      rampEnd = constrain(stoi(pchv), rampStart + 1, maxWop);
+    } else if (strcmp(pch, "rd") == 0) {
+      rampDuration = constrain(stoi(pchv), 1, maxRampDuration);
+    } else if (strcmp(pch, "ae") == 0) {
+      autoEnd = false; // set to false always if it is set
+    } else if (strcmp(pch, "la") == 0) {
+      displayActive = stob(pchv);
+    } else if (strcmp(pch, "lui") == 0) {
+      displayUpdateInfoInterval = constrain(stoi(pchv), 1, maxIntervalUpdate);
+    } else if (strcmp(pch, "bui") == 0) {
+      bufferTemperatureUpdateInterval = constrain(stoi(pchv), 1, maxIntervalUpdate);
+    } else if (strcmp(pch, "btac") == 0) {
+      bufferTemperatureAutomaticControl = stob(pchv);
+    } else if (strcmp(pch, "bts") == 0) {
+      bufferTemperatureSetpoint = constrain(stoi(pchv), bufferTemperatureSetpointMin, bufferTemperatureSetpointMax);
+    } else if (strcmp(pch, "btm") == 0) {
+      bufferTemperatureMaxError = constrain(stoi(pchv), bufferTemperatureMaxErrorMin, bufferTemperatureMaxErrorMax);
+    }
+    pch = strtok(NULL, "@=");
+  }
+}
+
+void loopMotor() {
+  if (onoff && !pause) {
+    nextMotorMove();
+  }
+}
+
+void nextMotorMove() {
+  int currentwop = wop;
+  if (ramp) {
+    currentwop = wopAuto;
+  }
+  if (runTimer.isRunning() && stepTimer.elapsed() > currentwop) {
+    if (motorPosition == 0 || motorPosition == -1) {
+      // go to +1 position
+      moveMotor((int) (90.0 + angle / 2.0));
+      motorPosition = 1;
+    } else {
+      // go to -1 position
+      moveMotor((int) (90.0 - angle / 2.0));
+      motorPosition = -1;
+    }
+    setNextWopAuto();
+    stepTimer.restart();
+  }
+}
+
+void setNextWopAuto() {
+  if (ramp) {
+    if (runTimer.hasPassed((long) rampDuration * 3600)) {
+      // Run end time reached
+      centerMotor();
+      runTimer.stop();
+      //serialDebugWrite("Automatic System Off [Run end time reached]");
+      autoEnd = true;
+    } else {
+      wopAuto = map((long) runTimer.elapsed(), (long) 0, (long) rampDuration * 3600, (long) rampStart, (long) (rampEnd + 1)); // +1 to be able to reach the last ramp wop
+    }
+  }
+}
+
+void centerMotor() {
+  moveMotor(90);
+  motorPosition = 0;
+}
+
+void moveMotor(int finalAngle) {
+  servo.attach(servoPin);
+  delay(15);
+  //servo.writeMicroseconds(map(finalAngle, 0, 180, servoUsFrom, servoUsTo));
+  servo.write(map(finalAngle, 0, 180, servoUsFrom, servoUsTo), servoVelocity, waitForMotorMove);
+  servo.detach();
+}
+
+void loopDisplay() {
+  if (!displayTimer.isRunning() || displayTimer.hasPassed(displayUpdateInfoInterval)) {
+      display.clearDisplay();
+    if (displayActive) {
+      // todo
+      /*if (autoEnd) {
+        display.print("AUTO END");
+        // Has run
+        display.setCursor(0, 1);
+        display.print(secondsToTime(runTimer.elapsed()));
+      } else {
+        if (lcdView == 0) {
+          // OnOff
+          if (onoff) {
+            if (pause) {
+              display.print("Pause");
+            } else {
+              display.print("On");
+            }
+          } else {
+            display.print("Off");
+          }
+          // Has run
+          display.setCursor(8, 0);
+          display.print(secondsToTime(runTimer.elapsed()));
+          // Ramp
+          display.setCursor(0, 1);
+          display.print("Ramp/");
+          if (ramp) {
+            display.print("On");
+          } else {
+            display.print("Off");
+          }
+          // Angle
+          display.setCursor(9, 1);
+          display.print("Ang/");
+          display.print(angle);
+
+          lcdView = 1;
+        } else if (lcdView == 1) {
+          // Buffer temperature
+          display.print("BT/");
+          display.print(bufferTemperature);
+          display.setCursor(8, 0);
+          display.print("WOP/");
+          if (ramp) {
+            display.print(wopAuto);
+            display.setCursor(0, 1);
+            display.print("S/");
+            display.print(rampStart);
+            display.print(" E/");
+            display.print(rampEnd);
+            display.print(" D/");
+            display.print(rampDuration);
+          } else {
+            display.print(wop);
+          }
+
+          lcdView = 0;
+        }
+      }*/
+      displayTimer.restart();
+    }
+  }
+}
+
+void loopBufferTemperature() {
+  if (!bufferTemperatureTimer.isRunning() || bufferTemperatureTimer.hasPassed(bufferTemperatureUpdateInterval)) {
+    bufferTemperature = readTemperature();
+    bufferTemperatureTimer.restart();
+  }
+
+  if (bufferTemperatureAutomaticControl) {
+    // decide if cooling is needed
+    if (bufferTemperature + bufferTemperatureMaxError > bufferTemperatureSetpoint && !bufferCoolingOn) { // start cooling
+      digitalWrite(pumpPin, HIGH);
+      digitalWrite(fan1Pin, HIGH);
+      digitalWrite(fan2Pin, HIGH);
+      digitalWrite(peltier1Pin, HIGH);
+      digitalWrite(peltier2Pin, HIGH);
+      bufferCoolingOn = true;
+    } else { // stop cooling
+      if (bufferCoolingOn) { // just if it is cooling
+        digitalWrite(pumpPin, LOW);
+        digitalWrite(fan1Pin, LOW);
+        digitalWrite(fan2Pin, LOW);
+        digitalWrite(peltier1Pin, LOW);
+        digitalWrite(peltier2Pin, LOW);
+        bufferCoolingOn = false;
+      }
+    }
+  }
+}
+
+void setOnOff(bool newOnOff) {
+  if (onoff == newOnOff) {
+    //serialDebugWrite("setOnOff | Already in the state ");
+    return;
+  }
+  if (newOnOff) {
+    runTimer.restart();
+    stepTimer.restart();
+    setNextWopAuto();
+    autoEnd = false;
+  } else {
+    runTimer.stop();
+    stepTimer.stop();
+    centerMotor();
+  }
+  onoff = newOnOff;
+}
+
+void setPause(bool newPause) {
+  if (pause == newPause) {
+    //serialDebugWrite("setPause | Already in the state ");
+    return;
+  }
+  if (newPause) {
+    runTimer.stop();
+    stepTimer.stop();
+    centerMotor();
+  } else {
+    runTimer.resume();
+    stepTimer.resume();
+  }
+  pause = newPause;
+}
+
+void setRamp(bool newRamp) {
+  if (ramp == newRamp) {
+    //serialDebugWrite("setRamp | Already in the state ");
+    return;
+  }
+  if (onoff) {
+    runTimer.restart();
+    stepTimer.restart();
+  }
+  ramp = newRamp;
+}
+
+String requestStringMaxSize(int strLength) {
+  String btRead = requestString();
+  if (strLength == -1) {
+    strLength = btRead.length() - 2;
+  }
+  btRead.remove(strLength);
+  return btRead;
+}
+
+String requestString() {
+  if (BT.available()) {
+    return BT.readString();
+  }
+  return "";
+}
+
+void serialDebugWrite(String outputtext) {
+  if (serialDebug) {
+    if (!serialStarted) {
+      Serial.begin(9600);
+      serialStarted = true;
+    }
+    Serial.print(millis());
+    Serial.print(" | ");
+    Serial.println(outputtext);
+  }
+}
+
+void encodeCurrent() {
+  sprintf(tmpBuffer, "o=%s@p=%s@r=%s@a=%d@w=%d@rs=%d@re=%d@rd=%d@aw=%d@bt=%d@hr=%lu@ae=%s@la=%s@lui=%d@bui=%d@btac=%s@bts=%d@btm=%d",
+          btos(onoff),
+          btos(pause),
+          btos(ramp),
+          angle,
+          wop,
+          rampStart,
+          rampEnd,
+          rampDuration,
+          wopAuto, // from here, just output
+          bufferTemperature,
+          runTimer.elapsed(),
+          btos(autoEnd), // end just output
+          btos(displayActive), // from here, deep config
+          displayUpdateInfoInterval,
+          bufferTemperatureUpdateInterval, // end deep config
+          btos(bufferTemperatureAutomaticControl),
+          bufferTemperatureSetpoint,
+          bufferTemperatureMaxError
+         );
+}
+
+void btSendMessage(String message) {
+  btSendMessage(message, true);
+}
+
+void btSendMessage(String message, bool newLine) {
+  //serialDebugWrite("BT | " + message);
+  if (newLine) {
+    BT.println(message);
+  } else {
+    BT.print(message);
+  }
+}
+
+int stoi(String convert) {
+  return convert.toInt();
+}
+
+bool stob(char * convert) {
+  return strcmp(convert, "t") == 0 ? true : false;
+}
+
+char * btos(bool convert) {
+  return convert ? "t" : "f";
+}
+
+char * secondsToTime(unsigned long t)
+{
+  static char str[12];
+  sprintf(str, "");
+  int h = (int) t / 3600;
+  t = t % 3600;
+  int m = (int) t / 60;
+  int s = (int) t % 60;
+  sprintf(str, "%02d:%02d:%02d", h, m, s);
+  return str;
+}
+
+// https://learn.adafruit.com/thermistor/using-a-thermistor
+#define THERMISTORPIN A0
+#define THERMISTORNOMINAL 10000
+#define TEMPERATURENOMINAL 25
+#define NUMSAMPLES 5
+#define BCOEFFICIENT 3950
+#define SERIESRESISTOR 10000
+int samples[NUMSAMPLES];
+
+int readTemperature() {
+  uint8_t i;
+  float average;
+
+  // take N samples in a row, with a slight delay
+  for (i = 0; i < NUMSAMPLES; i++) {
+    samples[i] = analogRead(THERMISTORPIN);
+    delay(10);
+  }
+
+  // average all the samples out
+  average = 0;
+  for (i = 0; i < NUMSAMPLES; i++) {
+    average += samples[i];
+  }
+  average /= NUMSAMPLES;
+
+  // convert the value to resistance
+  average = 1023 / average - 1;
+  average = SERIESRESISTOR / average;
+
+  float steinhart;
+  steinhart = average / THERMISTORNOMINAL;     // (R/Ro)
+  steinhart = log(steinhart);                  // ln(R/Ro)
+  steinhart /= BCOEFFICIENT;                   // 1/B * ln(R/Ro)
+  steinhart += 1.0 / (TEMPERATURENOMINAL + 273.15); // + (1/To)
+  steinhart = 1.0 / steinhart;                 // Invert
+  steinhart -= 273.15;
+
+  return (int) steinhart;
+}
