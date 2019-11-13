@@ -13,8 +13,8 @@
 #include <SoftwareSerial.h>
 #include <Chrono.h>
 #include <VarSpeedServo.h>
-#include <Wire.h>
-#include <Adafruit_SSD1306.h>
+#include <SSD1306Ascii.h>
+#include <SSD1306AsciiAvrI2c.h>
 
 // firmware
 #define firmwareVersion 1
@@ -36,12 +36,15 @@ int motorPosition = 0; // store current motor position (-1 = left, 0 = center, 1
 // bluetooth
 SoftwareSerial BT(10, 11); // TX, RX
 
-// LCD / I2C
-Adafruit_SSD1306 display(128, 64, &Wire, -1);
+// OLED / I2C
+#define I2C_ADDRESS 0x3C
+#define RST_PIN -1
+SSD1306AsciiAvrI2c display;
 Chrono displayTimer(Chrono::SECONDS); // Chrono for info update and view change
 bool displayActive = true; // update display info?
 int displayUpdateInfoInterval = 3; // display update info interval (seconds)
-#define oledLineHeight 11
+#define oledLineHeight 1
+int lastDisplayState = -1;
 
 // temperature control
 int bufferTemperature = 0; // current read of buffer temperature
@@ -79,7 +82,7 @@ String method; // switch commands from serial input
 char tmpBuffer[tmpBufferSize]; // temporal
 bool autoEnd = false; // whether the program has automaticlly ended
 #define maxIntervalUpdate 60 // 60 seconds for maximum update interval
-int bufferTemperatureUpdateInterval = 60; // buffer temperature update interval (seconds)
+int bufferTemperatureUpdateInterval = 10; // buffer temperature update interval (seconds)
 #define methodSync "y"
 #define methodSet "s"
 #define methodWho "w"
@@ -123,11 +126,9 @@ void setup() {
   serialDebugWrite("Setup done");
 
   // display init and splash
-  if (!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) { // Address 0x3D for 128x64
-    serialDebugWrite(F("SSD1306 allocation failed"));
-  }
-  display.clearDisplay();
-  display.setTextColor(SSD1306_WHITE);
+  display.begin(&Adafruit128x64, I2C_ADDRESS);
+  display.clear();
+  display.setFont(System5x7);
   displaySplash();
 }
 
@@ -149,14 +150,12 @@ void loopSerial() {
   if (BT.available())
   {
     inData = requestString();
-    //serialDebugWrite("inData | " + inData);
 
     strcpy(tmpBuffer, inData.c_str());
 
     strtok(strtok(tmpBuffer, "@"), "=");
     method = strtok(NULL, "=");
 
-    //serialDebugWrite("method | " + method);
 
     if (method == methodWho) {
       sprintf(tmpBuffer, "m=%s@fv=%d@fs=%d", methodWho, firmwareVersion, firmwareSubversion);
@@ -206,9 +205,9 @@ void setParams() {
       rampDuration = constrain(stoi(pchv), 1, maxRampDuration);
     } else if (strcmp(pch, "ae") == 0) {
       autoEnd = false; // set to false always if it is set
-    } else if (strcmp(pch, "la") == 0) {
+    } else if (strcmp(pch, "da") == 0) {
       displayActive = stob(pchv);
-    } else if (strcmp(pch, "lui") == 0) {
+    } else if (strcmp(pch, "dui") == 0) {
       displayUpdateInfoInterval = constrain(stoi(pchv), 1, maxIntervalUpdate);
     } else if (strcmp(pch, "bui") == 0) {
       bufferTemperatureUpdateInterval = constrain(stoi(pchv), 1, maxIntervalUpdate);
@@ -222,17 +221,16 @@ void setParams() {
     pch = strtok(NULL, "@=");
   }
 
-  display.clearDisplay();
-  display.setTextColor(SSD1306_WHITE);
+  display.clear();
 
-  display.setTextSize(2);
-  display.setCursor(5, 8);
-  display.println("Parameters");
-  display.setCursor(25, 40);
-  display.println("Updated");
+  display.set2X();
+  display.setCursor(5, 1);
+  display.print(F("Parameters"));
+  display.setCursor(25, 5);
+  display.print(F("Updated"));
+  lastDisplayState = -1;
 
-  display.display();
-  delay(500);
+  delay(1000);
 
   loopDisplay(true);
 }
@@ -269,7 +267,6 @@ void setNextWopAuto() {
       // Run end time reached
       centerMotor();
       runTimer.stop();
-      //serialDebugWrite("Automatic System Off [Run end time reached]");
       autoEnd = true;
     } else {
       wopAuto = map((long) runTimer.elapsed(), (long) 0, (long) rampDuration * 3600, (long) rampStart, (long) (rampEnd + 1)); // +1 to be able to reach the last ramp wop
@@ -292,106 +289,119 @@ void moveMotor(int finalAngle) {
 
 void loopDisplay(bool forceUpdate) {
   if (displayActive && (forceUpdate || !displayTimer.isRunning() || displayTimer.hasPassed(displayUpdateInfoInterval))) {
-    display.clearDisplay();
     if (autoEnd) {
-      display.setTextSize(2);
+      if (lastDisplayState == 1) return;
+      lastDisplayState = 1;
+      display.clear();
+      display.set2X();
       display.setCursor(10, 0);
-      display.println("automatic");
+      display.print(F("automatic"));
       display.setCursor(50, 20);
-      display.println("END");
+      display.print(F("END"));
       display.setCursor(10, 50);
-      display.println(secondsToTime(runTimer.elapsed()));
+      display.print(secondsToTime(runTimer.elapsed()));
     } else {
       // OnOff
       if (onoff) { // system on or paused
         if (pause) { // system paused
-          display.setTextSize(2);
-          display.setCursor(30, 8);
-          display.println("Paused");
-          display.setCursor(20, 40);
-          display.println(secondsToTime(runTimer.elapsed()));
+          if (lastDisplayState == 2) return;
+          lastDisplayState = 2;
+          display.clear();
+          display.set2X();
+          display.setCursor(30, 1);
+          display.print(F("Paused"));
+          display.setCursor(20, 5);
+          display.print(secondsToTime(runTimer.elapsed()));
         } else { // system on
+          if (lastDisplayState != 3) {
+            display.clear();
+          } else {
+          }
+          lastDisplayState = 3;
           int oledLine = 1;
-          display.setTextSize(1);
+          display.set1X();
 
           display.setCursor(0, 0);
-          display.print("Running");
+          display.print(F("System / Running"));
+
+          // Timer
+          display.setCursor(0, oledLineHeight * oledLine);
+          oledLine++;
+          display.print(F("Run time / "));
+          display.print(secondsToTime(runTimer.elapsed()));
+
           // Angle
-          if (ramp) {
-            display.print(" | Angle: ");
-          } else {
-            display.setCursor(0, oledLineHeight * oledLine);
-            oledLine++;
-            display.print("Angle: ");
-          }
-          display.println(angle);
+          display.setCursor(0, oledLineHeight * oledLine);
+          oledLine++;
+          display.print(F("Angle / "));
+          display.print(angle);
+          display.print(F("°"));
 
           // Buffer temperature
           display.setCursor(0, oledLineHeight * oledLine);
           oledLine++;
-          display.print("BT: ");
+          display.print(F("Buffer temp. / "));
           display.print(bufferTemperature);
-          display.print(" C");
+          display.print(F(" C"));
 
           // Ramp
-          if (ramp) {
-            display.println("Ramp: On");
-          } else {
+          if (!ramp) {
             display.setCursor(0, oledLineHeight * oledLine);
             oledLine++;
-            display.println("Ramp: Off");
+            display.print(F("Ramp / Off"));
           }
 
           // Wop/ramp
           display.setCursor(0, oledLineHeight * oledLine);
           oledLine++;
           if (ramp) {
-            display.print("WOP | Auto: ");
+            display.print(F("Ramp-WOP / "));
             display.print(wopAuto);
-            display.println(" s");
+            display.print(F(" s"));
             display.setCursor(0, oledLineHeight * oledLine);
             oledLine++;
-            display.print("Ramp | Start: ");
+            display.print(F("Ramp-Start / "));
             display.print(rampStart);
-            display.println(" s");
+            display.print(F(" s"));
             display.setCursor(0, oledLineHeight * oledLine);
             oledLine++;
-            display.print("Ramp | End: ");
+            display.print(F("Ramp-End / "));
             display.print(rampEnd);
-            display.println(" s");
+            display.print(F(" s"));
             display.setCursor(0, oledLineHeight * oledLine);
             oledLine++;
-            display.print("Ramp | Duration: ");
+            display.print(F("Ramp-Duration / "));
             display.print(rampDuration);
-            display.println(" h");
+            display.print(F(" h"));
           } else {
-            display.print("WOP: ");
+            display.print(F("WOP / "));
             display.print(wop);
-            display.println(" s");
+            display.print(F(" s"));
           }
         }
       } else { // system off
-        display.setTextSize(2);
-        display.setCursor(30, 8);
-        display.println("System");
-        display.setCursor(50, 40);
-        display.println("Off");
+        if (lastDisplayState == 4) return;
+        lastDisplayState = 4;
+        display.clear();
+        display.set2X();
+        display.setCursor(30, 1);
+        display.print(F("System"));
+        display.setCursor(50, 5);
+        display.print(F("Off"));
       }
     }
-    display.display();
     displayTimer.restart();
   }
 }
 
 void displaySplash() {
   if (displayActive) {
-    display.clearDisplay();
-    display.setTextSize(3);
-    display.setCursor(30, 5);
-    display.println("open");
-    display.setCursor(30, 35);
-    display.println("PFGE");
-    display.display();
+    display.clear();
+    display.set2X();
+    display.setCursor(40, 1);
+    display.print(F("open"));
+    display.setCursor(40, 5);
+    display.print(F("PFGE"));
 
     delay(2000);
   }
@@ -427,7 +437,6 @@ void loopBufferTemperature() {
 
 void setOnOff(bool newOnOff) {
   if (onoff == newOnOff) {
-    //serialDebugWrite("setOnOff | Already in the state ");
     return;
   }
   if (newOnOff) {
@@ -445,7 +454,6 @@ void setOnOff(bool newOnOff) {
 
 void setPause(bool newPause) {
   if (pause == newPause) {
-    //serialDebugWrite("setPause | Already in the state ");
     return;
   }
   if (newPause) {
@@ -461,7 +469,6 @@ void setPause(bool newPause) {
 
 void setRamp(bool newRamp) {
   if (ramp == newRamp) {
-    //serialDebugWrite("setRamp | Already in the state ");
     return;
   }
   if (onoff) {
@@ -500,7 +507,7 @@ void serialDebugWrite(String outputtext) {
 }
 
 void encodeCurrent() {
-  sprintf(tmpBuffer, "o=%s@p=%s@r=%s@a=%d@w=%d@rs=%d@re=%d@rd=%d@aw=%d@bt=%d@hr=%lu@ae=%s@la=%s@lui=%d@bui=%d@btac=%s@bts=%d@btm=%d",
+  sprintf(tmpBuffer, "o=%s@p=%s@r=%s@a=%d@w=%d@rs=%d@re=%d@rd=%d@aw=%d@bt=%d@hr=%lu@ae=%s@da=%s@dui=%d@bui=%d@btac=%s@bts=%d@btm=%d",
           btos(onoff),
           btos(pause),
           btos(ramp),
@@ -527,7 +534,6 @@ void btSendMessage(String message) {
 }
 
 void btSendMessage(String message, bool newLine) {
-  //serialDebugWrite("BT | " + message);
   if (newLine) {
     BT.println(message);
   } else {
@@ -555,7 +561,7 @@ char * secondsToTime(unsigned long t)
   t = t % 3600;
   int m = (int) t / 60;
   int s = (int) t % 60;
-  sprintf(str, "%02d:%02d:%02d", h, m, s);
+  sprintf(str, "%d:%02d:%02d", h, m, s);
   return str;
 }
 
