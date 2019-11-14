@@ -88,6 +88,8 @@ public class pfgeConfig extends AppCompatActivity implements ItemPickerDialogFra
     final String methodWho = "w";
     final String methodAutomaticEnd = "a";
     final String methodUnknown = "u";
+    final String methodCommunicationError="c";
+    Map<String, String> methodName = new HashMap<String, String>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -106,6 +108,14 @@ public class pfgeConfig extends AppCompatActivity implements ItemPickerDialogFra
         bluetoothName = settings.getString(settingsBluetoothName, null);
         bluetoothManager = BluetoothManager.getInstance();
         mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
+
+
+        methodName.put(methodSync , "Sync");
+        methodName.put(methodSet , "Set");
+        methodName.put(methodWho , "Who");
+        methodName.put(methodAutomaticEnd , "Auto End");
+        methodName.put(methodUnknown , "Unkown");
+        methodName.put(methodCommunicationError , "Comm. Error");
 
         if (bluetoothManager == null) {
             // Bluetooth unavailable on this device :( tell the user
@@ -145,6 +155,10 @@ public class pfgeConfig extends AppCompatActivity implements ItemPickerDialogFra
         requestMethod(methodSync);
     }
 
+    private void requestMethodCommunicationError() {
+        requestMethod(methodCommunicationError);
+    }
+
     private void requestMethod(String method) {
         requestMethodWithParams(method, null);
     }
@@ -156,9 +170,9 @@ public class pfgeConfig extends AppCompatActivity implements ItemPickerDialogFra
                 finalRequest += "@" + entry.getKey() + "=" + entry.getValue();
             }
         }
-        Log.d("Request", finalRequest);
+        finalRequest="<"+finalRequest+">";
         deviceInterface.sendMessage(finalRequest);
-        Toast.makeText(getApplicationContext(), "Requesting "+method+" method", Toast.LENGTH_LONG).show();
+        Toast.makeText(getApplicationContext(), "Requesting "+methodName.get(method)+" method", Toast.LENGTH_LONG).show();
     }
 
     private void connectDevice() {
@@ -212,8 +226,14 @@ public class pfgeConfig extends AppCompatActivity implements ItemPickerDialogFra
     }
 
     private void onMessageReceived(String message) {
+        // Check
+        if(!message.startsWith("<") || !message.endsWith(">")){
+            Toast.makeText(getApplicationContext(), "Communication error", Toast.LENGTH_LONG).show();
+            requestMethodCommunicationError();
+            return;
+        }
+        message=message.substring(1,message.length()-1);
         // We received a message! Handle it here.
-        Log.d("Response ", message);
         Map<String, String> response = new HashMap<String, String>();
         for (String value : message.split("@")) {
             String param1 = value.split("=")[0];
@@ -252,17 +272,25 @@ public class pfgeConfig extends AppCompatActivity implements ItemPickerDialogFra
             setMainView();
             processResponse(response);
             Toast.makeText(getApplicationContext(), "SET & SYNC done at " + getCurrentDate(null), Toast.LENGTH_LONG).show();
+            return;
         }
         if (response.get("m").compareTo(methodSync) == 0) {
             setMainView();
             processResponse(response);
             Toast.makeText(getApplicationContext(), "SYNC done at " + getCurrentDate(null), Toast.LENGTH_LONG).show();
+            return;
         }
         if (response.get("m").compareTo(methodAutomaticEnd) == 0) {
             processResponse(response);
+            return;
         }
         if (response.get("m").compareTo(methodUnknown) ==  0) {
             Toast.makeText(getApplicationContext(), "Unkown method requested", Toast.LENGTH_LONG).show();
+            return;
+        }
+        if (response.get("m").compareTo(methodCommunicationError) ==  0) {
+            Toast.makeText(getApplicationContext(), "Communication error", Toast.LENGTH_LONG).show();
+            return;
         }
     }
 

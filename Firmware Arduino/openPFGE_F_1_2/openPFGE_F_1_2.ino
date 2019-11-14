@@ -88,6 +88,7 @@ int bufferTemperatureUpdateInterval = 10; // buffer temperature update interval 
 #define methodWho "w"
 #define methodAutomaticEnd "a"
 #define methodUnknown "u"
+#define methodCommunicationError "c"
 
 // timers
 Chrono runTimer(Chrono::SECONDS); // running timer
@@ -123,7 +124,7 @@ void setup() {
   BT.begin(9600);
 
   // debug
-  serialDebugWrite("Setup done");
+  serialDebugWrite(F("Setup done"));
 
   // display init and splash
   display.begin(&Adafruit128x64, I2C_ADDRESS);
@@ -151,6 +152,15 @@ void loopSerial() {
   {
     inData = requestString();
 
+    // test message is complete
+    if (!inData.substring(0, 1).equals("<") || !inData.substring(inData.length() - 1).equals(">")) {
+      sprintf(tmpBuffer, "m=%s", methodCommunicationError);
+      btSendMessage(tmpBuffer);
+      return;
+    }
+    inData.remove(0, 1);
+    inData.remove(inData.length() - 1);
+
     strcpy(tmpBuffer, inData.c_str());
 
     strtok(strtok(tmpBuffer, "@"), "=");
@@ -172,6 +182,8 @@ void loopSerial() {
       encodeCurrent();
       sprintf(tmpBuffer + strlen(tmpBuffer), "@m=%s", methodSet);
       btSendMessage(tmpBuffer);
+    } else if (method == methodCommunicationError) {
+      displayCommError();
     } else {
       sprintf(tmpBuffer, "m=%s", methodUnknown);
       btSendMessage(tmpBuffer);
@@ -220,44 +232,28 @@ void setParams() {
     }
     pch = strtok(NULL, "@=");
   }
-
-  display.clear();
-
-  display.set2X();
-  display.setCursor(5, 1);
-  display.print(F("Parameters"));
-  display.setCursor(25, 5);
-  display.print(F("Updated"));
-  lastDisplayState = -1;
-
-  delay(1000);
-
-  loopDisplay(true);
+  displayParamUpdated();
 }
 
 void loopMotor() {
   if (onoff && !pause) {
-    nextMotorMove();
-  }
-}
-
-void nextMotorMove() {
-  int currentwop = wop;
-  if (ramp) {
-    currentwop = wopAuto;
-  }
-  if (runTimer.isRunning() && stepTimer.elapsed() > currentwop) {
-    if (motorPosition == 0 || motorPosition == -1) {
-      // go to +1 position
-      moveMotor((int) (90.0 + angle / 2.0));
-      motorPosition = 1;
-    } else {
-      // go to -1 position
-      moveMotor((int) (90.0 - angle / 2.0));
-      motorPosition = -1;
+    int currentwop = wop;
+    if (ramp) {
+      currentwop = wopAuto;
     }
-    setNextWopAuto();
-    stepTimer.restart();
+    if (motorPosition == 0 || stepTimer.elapsed() > currentwop) {
+      if (motorPosition == 0 || motorPosition == -1) {
+        // go to +1 position
+        moveMotor((int) (90.0 + angle / 2.0));
+        motorPosition = 1;
+      } else {
+        // go to -1 position
+        moveMotor((int) (90.0 - angle / 2.0));
+        motorPosition = -1;
+      }
+      setNextWopAuto();
+      stepTimer.restart();
+    }
   }
 }
 
@@ -390,7 +386,8 @@ void loopDisplay(bool forceUpdate) {
         display.print(F("Off"));
       }
     }
-    displayTimer.restart();
+    if (!forceUpdate)
+      displayTimer.restart();
   }
 }
 
@@ -404,6 +401,39 @@ void displaySplash() {
     display.print(F("PFGE"));
 
     delay(2000);
+  }
+}
+
+void displayParamUpdated() {
+  if (displayActive) {
+
+    display.clear();
+
+    display.set2X();
+    display.setCursor(5, 1);
+    display.print(F("Parameters"));
+    display.setCursor(25, 5);
+    display.print(F("Updated"));
+    lastDisplayState = -1;
+
+    delay(1000);
+
+    loopDisplay(true);
+  }
+}
+
+void displayCommError() {
+  if (displayActive) {
+    display.clear();
+
+    display.set2X();
+    display.setCursor(5, 1);
+    display.print(F("Communication"));
+    display.setCursor(30, 5);
+    display.print(F("Error"));
+    lastDisplayState = -1;
+
+    delay(1000);
   }
 }
 
@@ -534,6 +564,7 @@ void btSendMessage(String message) {
 }
 
 void btSendMessage(String message, bool newLine) {
+  message = "<" + message + ">";
   if (newLine) {
     BT.println(message);
   } else {
