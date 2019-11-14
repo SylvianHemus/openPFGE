@@ -2,41 +2,30 @@
 // RoboIndia Code for HC-05 with AT Mode
 // https://www.roboindia.com/tutorials
 
+// bluetooth hc-05: RX --> Pin 11 & TX --> Pin 10 & EN --> 5V (& 5v to power source)
+
 #include <SoftwareSerial.h>
 
 SoftwareSerial BTSerial(10, 11); // TX, RX
 
-#define BTName "openPFGE"
-#define BTPass "1234"
-
 void setup()
 {
   Serial.begin(9600);
-  Serial.println("Enter AT commands:");
+  Serial.println("Entering AT commands:");
   BTSerial.begin(38400);
-  //if (BTSerial.available()){
-  /*} else {
-    Serial.println("BT not available");
-    }*/
 }
 
-void loop(){  
-    BTSerial.print("AT+NAME=");
-    BTSerial.println(BTName);
-    BTSerial.print("AT+PSWD=");
-    BTSerial.println(BTPass);
-    
-    Serial.println("Name & Password set");
-        
-    Serial.print("Name: ");
-    BTSerial.println("AT+NAME");
-    Serial.println(BTSerial.read());
-    
-    Serial.println("Password:");
-    BTSerial.println("AT+PSWD");
-    Serial.println(BTSerial.read());
-    
-    Serial.println("Version:");
-    BTSerial.println("AT+VERSION");
-    Serial.println(BTSerial.read());
-  }
+void loop()
+{
+  // SEND AT COMMANDS
+  //AT+NAME
+  //AT+PSWD
+
+  // Keep reading from HC-05 and send to Arduino Serial Monitor
+  if (BTSerial.available())
+    Serial.write(BTSerial.read());
+
+  // Keep reading from Arduino Serial Monitor and send to HC-05
+  if (Serial.available())
+    BTSerial.write(Serial.read());
+}
