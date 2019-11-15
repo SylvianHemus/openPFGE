@@ -11,4 +11,24 @@
         android:icon="@android:drawable/stat_sys_upload"
         android:title="Send to device"
         compat:showAsAction="always" />
+    <item
+        android:id="@+id/saveProgram"
+        android:icon="@android:drawable/ic_menu_save"
+        android:title="Save this Program"
+        compat:showAsAction="ifRoom" />
+    <item
+        android:id="@+id/loadProgram"
+        android:icon="@android:drawable/ic_menu_agenda"
+        android:title="Load a Program"
+        compat:showAsAction="ifRoom" />
+    <item
+        android:id="@+id/deleteProgram"
+        android:icon="@android:drawable/ic_menu_delete"
+        android:title="Delete a Program"
+        compat:showAsAction="ifRoom" />
+    <item
+        android:id="@+id/about"
+        android:icon="@android:drawable/ic_menu_info_details"
+        android:title="About"
+        compat:showAsAction="ifRoom" />
 </menu>

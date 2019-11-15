@@ -8,6 +8,7 @@
     tools:context=".pfgeConfig">
 
     <LinearLayout
+        android:id="@+id/linearLayoutSelectBluetoothTapToRetry"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:gravity="center"
@@ -18,7 +19,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:paddingRight="8dp"
-            android:text="Select bluetooth device"
+            android:text="Select bluetooth device\n\nTap to retry"
             android:textAlignment="center"
             android:textColor="@color/colorTextFullScreenLayout"
             android:textSize="14sp"

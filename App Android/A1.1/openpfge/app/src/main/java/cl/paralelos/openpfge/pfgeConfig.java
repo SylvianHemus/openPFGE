@@ -4,6 +4,7 @@ import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.content.BroadcastReceiver;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
@@ -13,6 +14,7 @@ import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.CompoundButton;
 import android.widget.EditText;
@@ -20,6 +22,8 @@ import android.widget.LinearLayout;
 import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import android.app.AlertDialog;
 
 import androidx.appcompat.app.AppCompatActivity;
 
@@ -32,8 +36,10 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import io.reactivex.android.schedulers.AndroidSchedulers;
@@ -88,8 +94,11 @@ public class pfgeConfig extends AppCompatActivity implements ItemPickerDialogFra
     final String methodWho = "w";
     final String methodAutomaticEnd = "a";
     final String methodUnknown = "u";
-    final String methodCommunicationError="c";
+    final String methodCommunicationError = "c";
     Map<String, String> methodName = new HashMap<String, String>();
+
+    final String programasStringSetName = "programas";
+    final String programasStringSetSep = "¬";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -100,7 +109,7 @@ public class pfgeConfig extends AppCompatActivity implements ItemPickerDialogFra
         minFirmwareVersionSupported = Integer.parseInt(getResources().getString(R.string.app_firmware_min_firmware_version_supported));
 
         settings = this.getSharedPreferences("bluetoothDevice", Context.MODE_PRIVATE);
-        settingsEditor=settings.edit();
+        settingsEditor = settings.edit();
 
         registerReceiver(mReceiver, new IntentFilter(BluetoothAdapter.ACTION_STATE_CHANGED));
 
@@ -110,12 +119,12 @@ public class pfgeConfig extends AppCompatActivity implements ItemPickerDialogFra
         mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
 
 
-        methodName.put(methodSync , "Sync");
-        methodName.put(methodSet , "Set");
-        methodName.put(methodWho , "Who");
-        methodName.put(methodAutomaticEnd , "Auto End");
-        methodName.put(methodUnknown , "Unkown");
-        methodName.put(methodCommunicationError , "Comm. Error");
+        methodName.put(methodSync, "Sync");
+        methodName.put(methodSet, "Set");
+        methodName.put(methodWho, "Who");
+        methodName.put(methodAutomaticEnd, "Auto End");
+        methodName.put(methodUnknown, "Unkown");
+        methodName.put(methodCommunicationError, "Comm. Error");
 
         if (bluetoothManager == null) {
             // Bluetooth unavailable on this device :( tell the user
@@ -130,8 +139,7 @@ public class pfgeConfig extends AppCompatActivity implements ItemPickerDialogFra
         }
     }
 
-
-    private void requestMethodSet() {
+    private Map<String, String> encodeParams() {
         Map<String, String> params = new HashMap<String, String>();
         params.put("o", switchOnOff.isChecked() ? "t" : "f");
         params.put("p", switchPause.isChecked() ? "t" : "f");
@@ -148,7 +156,22 @@ public class pfgeConfig extends AppCompatActivity implements ItemPickerDialogFra
         params.put("btac", switchBufferTemperatureAutomaticControl.isChecked() ? "t" : "f");
         params.put("bts", editTextBufferTemperatureSetpoint.getText().toString());
         params.put("btm", editTextBufferTemperatureMaxError.getText().toString());
-        requestMethodWithParams(methodSet, params);
+        return params;
+    }
+
+    private String encondeParamsToString() {
+        String encondedParams = "";
+        Map<String, String> params = encodeParams();
+        for (Map.Entry<String, String> param : params.entrySet()) {
+            encondedParams += param.getKey() + "=" + param.getValue() + "@";
+        }
+        encondedParams.substring(encondedParams.length() - 1);
+        return encondedParams;
+    }
+
+
+    private void requestMethodSet() {
+        requestMethodWithParams(methodSet, encodeParams());
     }
 
     private void requestMethodSync() {
@@ -170,9 +193,9 @@ public class pfgeConfig extends AppCompatActivity implements ItemPickerDialogFra
                 finalRequest += "@" + entry.getKey() + "=" + entry.getValue();
             }
         }
-        finalRequest="<"+finalRequest+">";
+        finalRequest = "<" + finalRequest + ">";
         deviceInterface.sendMessage(finalRequest);
-        Toast.makeText(getApplicationContext(), "Requesting "+methodName.get(method)+" method", Toast.LENGTH_LONG).show();
+        Toast.makeText(getApplicationContext(), "Requesting " + methodName.get(method) + " method", Toast.LENGTH_LONG).show();
     }
 
     private void connectDevice() {
@@ -208,6 +231,7 @@ public class pfgeConfig extends AppCompatActivity implements ItemPickerDialogFra
         });
         bluetoothManager.closeDevice(bluetoothAdress);
         bluetoothManager.close();
+        menuItemsHide();
     }
 
     private void onConnected(BluetoothSerialDevice connectedDevice) {
@@ -218,6 +242,7 @@ public class pfgeConfig extends AppCompatActivity implements ItemPickerDialogFra
         // Listen to bluetooth events
         deviceInterface.setListeners(this::onMessageReceived, this::onMessageSent, this::onError);
         requestMethod(methodWho);
+        menuItemsShow();
     }
 
     private void onMessageSent(String message) {
@@ -227,12 +252,12 @@ public class pfgeConfig extends AppCompatActivity implements ItemPickerDialogFra
 
     private void onMessageReceived(String message) {
         // Check
-        if(!message.startsWith("<") || !message.endsWith(">")){
+        if (!message.startsWith("<") || !message.endsWith(">")) {
             Toast.makeText(getApplicationContext(), "Communication error", Toast.LENGTH_LONG).show();
             requestMethodCommunicationError();
             return;
         }
-        message=message.substring(1,message.length()-1);
+        message = message.substring(1, message.length() - 1);
         // We received a message! Handle it here.
         Map<String, String> response = new HashMap<String, String>();
         for (String value : message.split("@")) {
@@ -284,11 +309,11 @@ public class pfgeConfig extends AppCompatActivity implements ItemPickerDialogFra
             processResponse(response);
             return;
         }
-        if (response.get("m").compareTo(methodUnknown) ==  0) {
+        if (response.get("m").compareTo(methodUnknown) == 0) {
             Toast.makeText(getApplicationContext(), "Unkown method requested", Toast.LENGTH_LONG).show();
             return;
         }
-        if (response.get("m").compareTo(methodCommunicationError) ==  0) {
+        if (response.get("m").compareTo(methodCommunicationError) == 0) {
             Toast.makeText(getApplicationContext(), "Communication error", Toast.LENGTH_LONG).show();
             return;
         }
@@ -335,7 +360,7 @@ public class pfgeConfig extends AppCompatActivity implements ItemPickerDialogFra
                     textViewHasRun.setText(hms);
                     break;
                 case "ae":
-                    if("t".equals(entry.getValue())) {
+                    if ("t".equals(entry.getValue())) {
                         setContentView(R.layout.activity_automatic_end);
                         LinearLayout linearLayoutTapToContinue = (LinearLayout) findViewById(R.id.linearLayoutTapToContinue);
                         linearLayoutTapToContinue.setOnClickListener(new View.OnClickListener() {
@@ -408,6 +433,17 @@ public class pfgeConfig extends AppCompatActivity implements ItemPickerDialogFra
 
     private void selectBluetoothDevice() {
         setContentView(R.layout.activity_select_bt_device);
+        LinearLayout linearLayoutSelectBluetoothTapToRetry = (LinearLayout) findViewById(R.id.linearLayoutSelectBluetoothTapToRetry);
+        linearLayoutSelectBluetoothTapToRetry.setOnClickListener(new View.OnClickListener() {
+            public void onClick(View v) {
+                showBtSelector();
+            }
+        });
+        showBtSelector();
+    }
+
+
+    public void showBtSelector() {
         List<BluetoothDevice> pairedDevices = bluetoothManager.getPairedDevicesList();
 
         // If there are paired devices
@@ -418,12 +454,12 @@ public class pfgeConfig extends AppCompatActivity implements ItemPickerDialogFra
                 // Add the name and address to an array adapter to show in a ListView
                 pickerItems.add(new ItemPickerDialogFragment.Item(device.getName(), device.getAddress()));
             }
-            ItemPickerDialogFragment dialog = ItemPickerDialogFragment.newInstance(
+            ItemPickerDialogFragment itemPickerDialogFragmentDialog = ItemPickerDialogFragment.newInstance(
                     "Select BT Device",
                     pickerItems,
                     -1
             );
-            dialog.show(getFragmentManager(), "ItemPicker");
+            itemPickerDialogFragmentDialog.show(getFragmentManager(), "ItemPickerBtSelector");
         } else {
             Toast.makeText(getApplicationContext(), "No paired devices. Add one and retry", Toast.LENGTH_LONG).show();
         }
@@ -431,14 +467,22 @@ public class pfgeConfig extends AppCompatActivity implements ItemPickerDialogFra
 
     @Override
     public void onItemSelected(ItemPickerDialogFragment fragment, ItemPickerDialogFragment.Item item, int index) {
-        bluetoothName = item.getTitle();
-        bluetoothAdress = item.getStringValue();
-        // save to memory
-        settingsEditor.putString(settingsBluetoothName, bluetoothName);
-        settingsEditor.putString(settingsBluetoothAdress, bluetoothAdress);
-        settingsEditor.commit();
+        if (fragment.getTag() == "ItemPickerBtSelector") {
+            bluetoothName = item.getTitle();
+            bluetoothAdress = item.getStringValue();
+            // save to memory
+            settingsEditor.putString(settingsBluetoothName, bluetoothName);
+            settingsEditor.putString(settingsBluetoothAdress, bluetoothAdress);
+            settingsEditor.commit();
 
-        connectDevice();
+            connectDevice();
+        } else if (fragment.getTag() == "ItemPickerProgram") {
+            loadProgram(item.getTitle());
+        } else if (fragment.getTag() == "ItemPickerProgramOverwrite") {
+            overwriteProgram(item.getTitle());
+        } else if (fragment.getTag() == "ItemPickerProgramDelete") {
+            deleteProgram(item.getTitle());
+        }
     }
 
     private String getCurrentDate(String pattern) {
@@ -459,8 +503,8 @@ public class pfgeConfig extends AppCompatActivity implements ItemPickerDialogFra
 
     private void requireTurnBtOn() {
         setContentView(R.layout.activity_turn_bt_on);
-        LinearLayout linearLayoutTapToReconnect = (LinearLayout) findViewById(R.id.linearLayoutTapToRetry);
-        linearLayoutTapToReconnect.setOnClickListener(new View.OnClickListener() {
+        LinearLayout linearLayoutTurnBtOnTapToRetry = (LinearLayout) findViewById(R.id.linearLayoutTurnBtOnTapToRetry);
+        linearLayoutTurnBtOnTapToRetry.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
                 Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
                 startActivityForResult(enableBtIntent, REQUEST_ENABLE_BT);
@@ -494,8 +538,8 @@ public class pfgeConfig extends AppCompatActivity implements ItemPickerDialogFra
         editTextRampDuration = findViewById(R.id.editTextRampDuration);
         editTextDisplayUpdateInterval = findViewById(R.id.editTextDisplayUpdateInterval);
         editTextBufferTemperatureUpdateInterval = findViewById(R.id.editTextBufferTemperatureUpdateInterval);
-        editTextBufferTemperatureSetpoint =findViewById(R.id.editTextBufferTemperatureUpdateSetpoint);
-        editTextBufferTemperatureMaxError =findViewById(R.id.editTextBufferTemperatureMaxError);
+        editTextBufferTemperatureSetpoint = findViewById(R.id.editTextBufferTemperatureUpdateSetpoint);
+        editTextBufferTemperatureMaxError = findViewById(R.id.editTextBufferTemperatureMaxError);
 
         final Button buttonChangeDevice = findViewById(R.id.buttonChangeDevice);
         final Button buttonDisconnectDevice = findViewById(R.id.buttonDisconnectDevice);
@@ -507,7 +551,7 @@ public class pfgeConfig extends AppCompatActivity implements ItemPickerDialogFra
 
         textViewDeviceName.setText("Device name: " + bluetoothName);
 
-        CompoundButton.OnCheckedChangeListener coccl=new CompoundButton.OnCheckedChangeListener() {
+        CompoundButton.OnCheckedChangeListener coccl = new CompoundButton.OnCheckedChangeListener() {
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
                 showHideUI();
             }
@@ -532,11 +576,39 @@ public class pfgeConfig extends AppCompatActivity implements ItemPickerDialogFra
         showHideUI();
     }
 
+    private MenuItem menuItemSync;
+    private MenuItem menuItemSet;
+    private MenuItem menuItemSaveProgram;
+    private MenuItem menuItemLoadProgram;
+    private MenuItem menuItemDeleteProgram;
+
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         MenuInflater inflater = getMenuInflater();
         inflater.inflate(R.menu.main_menu, menu);
-        return true;
+        menuItemSync = menu.getItem(0);
+        menuItemSet = menu.getItem(1);
+        menuItemSaveProgram = menu.getItem(2);
+        menuItemLoadProgram = menu.getItem(3);
+        menuItemDeleteProgram = menu.getItem(4);
+        menuItemsHide();
+        return super.onCreateOptionsMenu(menu);
+    }
+
+    private void menuItemsHide() {
+        menuItemSync.setVisible(false);
+        menuItemSet.setVisible(false);
+        menuItemSaveProgram.setVisible(false);
+        menuItemLoadProgram.setVisible(false);
+        menuItemDeleteProgram.setVisible(false);
+    }
+
+    private void menuItemsShow() {
+        menuItemSync.setVisible(true);
+        menuItemSet.setVisible(true);
+        menuItemSaveProgram.setVisible(true);
+        menuItemLoadProgram.setVisible(true);
+        menuItemDeleteProgram.setVisible(true);
     }
 
     @Override
@@ -550,12 +622,254 @@ public class pfgeConfig extends AppCompatActivity implements ItemPickerDialogFra
                 requestMethodSet();
                 return true;
 
+            case R.id.loadProgram:
+                loadProgram();
+                return true;
+
+            case R.id.saveProgram:
+                saveProgram();
+                return true;
+
+            case R.id.deleteProgram:
+                deleteProgram();
+                return true;
+
+            case R.id.about:
+                showAbout();
+                return true;
+
             default:
                 // If we got here, the user's action was not recognized.
                 // Invoke the superclass to handle it.
                 return super.onOptionsItemSelected(item);
 
         }
+    }
+
+    private boolean deleteProgram() {
+        if(hasCustomPrograms()){
+            loadProgram("Select program to delete", "ItemPickerProgramDelete");
+        } else{
+            Toast.makeText(getApplicationContext(), "You have no programs", Toast.LENGTH_LONG).show();
+        }
+        return false;
+    }
+
+    private void deleteProgram(String programName) {
+        Set<String> stringSetProgramas = settings.getStringSet(programasStringSetName, new HashSet<>());
+        if (!stringSetProgramas.isEmpty()) {
+            String toRemove = "";
+            for (String programa : stringSetProgramas) {
+                String[] programaPars = programa.split(programasStringSetSep);
+                if (programaPars[0] == programName) {
+                    toRemove = programa;
+                    break;
+                }
+            }
+            if (!toRemove.isEmpty()) {
+                stringSetProgramas.remove(toRemove);
+                settingsEditor.putStringSet(programasStringSetName, stringSetProgramas);
+                settingsEditor.commit();
+                Toast.makeText(getApplicationContext(), "Deleted", Toast.LENGTH_LONG).show();
+                return;
+            }
+        }
+
+        Toast.makeText(getApplicationContext(), "Error while deleting", Toast.LENGTH_LONG).show();
+    }
+
+
+    List<Program> programs = new ArrayList<Program>();
+
+    private boolean loadPrograms() {
+        programs.clear();
+        // defaults
+        programs.add(new Program(
+                "MidRange PFG Marker",
+                "o=f@p=f@r=t@a=120@w=3@rs=1@re=25@rd=24@da=t@dui=3@bui=10@btac=t@bts=14@btm=3",
+                "NEB",
+                "N0342S",
+                "0.5X TBE\n6 volts/cm",
+                "https://international.neb.com/products/n0342-midrange-pfg-marker",
+                true
+        ));
+        programs.add(new Program(
+                "CHEF DNA Size Marker",
+                "o=f@p=f@r=t@a=120@w=3@rs=26@re=228@rd=26@da=t@dui=3@bui=10@btac=t@bts=14@btm=3",
+                "BIO-RAD",
+                "1703605",
+                "0.5X TBE\n6 volts/cm",
+                "https://www.researchgate.net/post/How_to_figure_out_a_PFGE_protocol",
+                true
+        ));
+        // custom
+        Set<String> stringSetProgramas = settings.getStringSet(programasStringSetName, new HashSet<>());
+        if (!stringSetProgramas.isEmpty()) {
+            for (String programa : stringSetProgramas) {
+                String[] programaPars = programa.split(programasStringSetSep);
+                programs.add(new Program(
+                        programaPars[0],
+                        programaPars[1],
+                        "",
+                        "",
+                        programaPars[2],
+                        "",
+                        false
+                ));
+            }
+        }
+        return false;
+    }
+
+    private void loadProgram() {
+        loadProgram("Select program", "ItemPickerProgram");
+    }
+
+    private void loadProgram(String title, String tag) {
+        Boolean justCustom=tag=="ItemPickerProgramDelete"?true:false;
+        loadPrograms();
+        ArrayList<ItemPickerDialogFragment.Item> pickerItems = new ArrayList<>();
+        for (Program program : programs) {
+            // Add the name and address to an array adapter to show in a ListView
+            if(justCustom && program.defaultProgram) continue;
+            pickerItems.add(new ItemPickerDialogFragment.Item(program.name, program.getProgramDetail()));
+        }
+        ItemPickerDialogFragment itemPickerDialogFragmentDialog = ItemPickerDialogFragment.newInstance(
+                title,
+                pickerItems,
+                -1
+        );
+        itemPickerDialogFragmentDialog.show(getFragmentManager(), tag);
+    }
+
+    private boolean hasCustomPrograms() {
+        loadPrograms();
+        for (Program program : programs) {
+            if (!program.defaultProgram) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean loadProgram(String programName) {
+        for (Program program : programs) {
+            if (program.name == programName) {
+                Map<String, String> programConfig = new HashMap<String, String>();
+                for (String value : program.programConfig.split("@")) {
+                    String param1 = value.split("=")[0];
+                    String param2 = value.split("=")[1];
+                    programConfig.put(param1, param2);
+                }
+                processResponse(programConfig);
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean saveProgram() {
+
+        // prepare input text view
+        final EditText inputProgramName = new EditText(pfgeConfig.this);
+        inputProgramName.setSingleLine();
+        inputProgramName.setHint("Program name");
+        final EditText inputProgramMessage = new EditText(pfgeConfig.this);
+        inputProgramMessage.setSingleLine();
+        inputProgramMessage.setHint("Program message");
+        final LinearLayout container = new LinearLayout(pfgeConfig.this);
+        container.setOrientation(LinearLayout.VERTICAL);
+        final LinearLayout.LayoutParams params1 = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        params1.setMargins(40, 0, 40, 0);
+        inputProgramName.setLayoutParams(params1);
+        final LinearLayout.LayoutParams params2 = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        params2.setMargins(40, 40, 40, 0);
+        inputProgramMessage.setLayoutParams(params2);
+        container.addView(inputProgramName);
+        container.addView(inputProgramMessage);
+
+        // show dialog
+        new AlertDialog.Builder(pfgeConfig.this)
+                .setTitle("Save program")
+                .setMessage("Do you want to create a new program or replace an existing one?")
+                .setPositiveButton("NEW", new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int whichButton) {
+                        new AlertDialog.Builder(pfgeConfig.this)
+                                .setTitle("Save program")
+                                .setMessage("Give a name to your program and set some custom message")
+                                .setView(container)
+                                .setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
+                                    @Override
+                                    public void onClick(DialogInterface dialog, int whichButton) {
+                                        String saveResultText = "Saved";
+                                        Set<String> stringSetProgramas = settings.getStringSet(programasStringSetName, new HashSet<>());
+                                        if (inputProgramName.getText().toString().isEmpty()) {
+                                            saveResultText = "Error. Please provide a name for the program. Try again.";
+                                        } else {
+                                            String toAdd = inputProgramName.getText().toString() + programasStringSetSep + encondeParamsToString() + programasStringSetSep + inputProgramMessage.getText().toString();
+                                            if (stringSetProgramas.contains(toAdd))
+                                                stringSetProgramas.remove(toAdd);
+                                            stringSetProgramas.add(toAdd);
+                                            settingsEditor.putStringSet(programasStringSetName, stringSetProgramas);
+                                            settingsEditor.commit();
+                                        }
+                                        Toast.makeText(getApplicationContext(), saveResultText, Toast.LENGTH_LONG).show();
+                                    }
+                                })
+                                .setNegativeButton(android.R.string.cancel, null)
+                                .show();
+                    }
+                })
+                .setNegativeButton("REPLACE", new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int whichButton) {
+                        if (hasCustomPrograms()) {
+                            loadProgram("Select program to overwrite", "ItemPickerProgramOverwrite");
+                        } else {
+                            Toast.makeText(getApplicationContext(), "No custom programs to replace", Toast.LENGTH_LONG).show();
+                        }
+                    }
+                })
+                .show();
+        return false;
+    }
+
+    private void overwriteProgram(String programName) {
+        Set<String> stringSetProgramas = settings.getStringSet(programasStringSetName, new HashSet<>());
+        if (!stringSetProgramas.isEmpty()) {
+            Log.d("overwriteProgram","here");
+            String toRemove = "";
+            for (String programa : stringSetProgramas) {
+                String[] programaPars = programa.split(programasStringSetSep);
+                if (programaPars[0] == programName) {
+                    toRemove = programa;
+                    break;
+                }
+            }
+            Log.d("toRemove",toRemove);
+            if (!toRemove.isEmpty()) {
+                String[] newProgram = toRemove.split(programasStringSetSep);
+                stringSetProgramas.remove(toRemove);
+                String toAdd = newProgram[0] + programasStringSetSep + encondeParamsToString() + programasStringSetSep + newProgram[2];
+                if(stringSetProgramas.contains(toAdd)){
+                    stringSetProgramas.remove(toAdd);
+                }
+                stringSetProgramas.add(toAdd);
+                settingsEditor.putStringSet(programasStringSetName, stringSetProgramas);
+                settingsEditor.commit();
+                Toast.makeText(getApplicationContext(), "Saved", Toast.LENGTH_LONG).show();
+                return;
+            }
+        }
+
+        Toast.makeText(getApplicationContext(), "Error while overwriting", Toast.LENGTH_LONG).show();
+    }
+
+    private void showAbout() {
+        new AlertDialog.Builder(pfgeConfig.this)
+                .setTitle("About")
+                .setMessage("Version: " + firmwareVersion + "\nSubversion: " + firmwareSubversion + "\nSupport: https://gitlab.com/diegusleik/openpfge")
+                .setNegativeButton(android.R.string.ok, null)
+                .show();
     }
 
     private final BroadcastReceiver mReceiver = new BroadcastReceiver() {
