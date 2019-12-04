@@ -3,22 +3,36 @@ package cl.paralelos.openpfge;
 public class Program {
     public String name;
     public String programConfig;
-    public String brand;
+    public String productBrand;
     public String productCode;
-    public String userMessage;
-    public String source;
+    public String customMessage;
+    public String programInfoSource;
+    public String sizeRange;
     public Boolean defaultProgram;
 
-    public Program(String name, String programConfig, String brand, String productCode, String userMessage, String source, Boolean defaultProgram) {
+    public Program(String name, String programConfig, String productBrand, String productCode, String sizeRange, String customMessage, String programInfoSource, Boolean defaultProgram) {
         this.name = name;
         this.programConfig = programConfig;
-        this.brand = brand;
+        this.productBrand = productBrand;
         this.productCode = productCode;
-        this.userMessage = userMessage;
-        this.source = source;
+        this.customMessage = customMessage;
+        this.programInfoSource = programInfoSource;
         this.defaultProgram = defaultProgram;
+        this.sizeRange=sizeRange;
     }
-    public String getProgramDetail(){
-        return  programConfig;
+
+    public String getProgramDetail() {
+        String programDetail = "";
+        String lineBreak = "\n";
+        programDetail += "Name: " + name + lineBreak;
+        if (defaultProgram) {
+            programDetail += "Brand: " + productBrand + lineBreak;
+            programDetail += "Product code: " + productCode + lineBreak;
+            programDetail += "Size range: " + sizeRange + lineBreak;
+            programDetail += "Program info. source: " + programInfoSource + lineBreak;
+        }
+        programDetail += "Default: " + defaultProgram + lineBreak;
+        programDetail += "Message: " + customMessage + lineBreak;
+        return programDetail;
     }
 }

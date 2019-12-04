@@ -8,4 +8,6 @@
     <color name="colorSectionTitle">#D81B60</color>
     <color name="colorSectionSeparator">#D81B60</color>
     <color name="colorBackgroundSplashScreenLayout">#D81B60</color>
+    <color name="colorToastBackground">#d8e560</color>
+    <color name="colorToastText">#000</color>
 </resources>

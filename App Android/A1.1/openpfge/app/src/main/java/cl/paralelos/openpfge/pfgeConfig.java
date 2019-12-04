@@ -1,5 +1,6 @@
 package cl.paralelos.openpfge;
 
+import android.app.AlertDialog;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.content.BroadcastReceiver;
@@ -8,8 +9,8 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
+import android.graphics.PorterDuff;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
@@ -23,9 +24,8 @@ import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import android.app.AlertDialog;
-
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.content.ContextCompat;
 
 import com.harrysoft.androidbluetoothserial.BluetoothManager;
 import com.harrysoft.androidbluetoothserial.BluetoothSerialDevice;
@@ -99,6 +99,7 @@ public class pfgeConfig extends AppCompatActivity implements ItemPickerDialogFra
 
     final String programasStringSetName = "programas";
     final String programasStringSetSep = "¬";
+    Toast toast;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -126,9 +127,16 @@ public class pfgeConfig extends AppCompatActivity implements ItemPickerDialogFra
         methodName.put(methodUnknown, "Unkown");
         methodName.put(methodCommunicationError, "Comm. Error");
 
+
+        toast = Toast.makeText(getApplicationContext(), "", Toast.LENGTH_LONG);
+        View view = toast.getView();
+        view.getBackground().setColorFilter(ContextCompat.getColor(getApplicationContext(), R.color.colorToastBackground), PorterDuff.Mode.SRC_IN);
+        TextView textView = (TextView) toast.getView().findViewById(android.R.id.message);
+        textView.setTextColor(ContextCompat.getColor(getApplicationContext(), R.color.colorToastText));
+
         if (bluetoothManager == null) {
             // Bluetooth unavailable on this device :( tell the user
-            Toast.makeText(getApplicationContext(), "Bluetooth not available.", Toast.LENGTH_LONG).show();
+            showFlashMessage("Bluetooth not available.");
             finish();
         }
 
@@ -195,7 +203,7 @@ public class pfgeConfig extends AppCompatActivity implements ItemPickerDialogFra
         }
         finalRequest = "<" + finalRequest + ">";
         deviceInterface.sendMessage(finalRequest);
-        Toast.makeText(getApplicationContext(), "Requesting " + methodName.get(method) + " method", Toast.LENGTH_LONG).show();
+        showFlashMessage("Requesting " + methodName.get(method) + " method");
     }
 
     private void connectDevice() {
@@ -247,13 +255,12 @@ public class pfgeConfig extends AppCompatActivity implements ItemPickerDialogFra
 
     private void onMessageSent(String message) {
         // We sent a message! Handle it here.
-        //Toast.makeText(getApplicationContext(), "Sent a message! Message was: " + message, Toast.LENGTH_LONG).show();
     }
 
     private void onMessageReceived(String message) {
         // Check
         if (!message.startsWith("<") || !message.endsWith(">")) {
-            Toast.makeText(getApplicationContext(), "Communication error", Toast.LENGTH_LONG).show();
+            showFlashMessage("Communication error");
             requestMethodCommunicationError();
             return;
         }
@@ -266,18 +273,18 @@ public class pfgeConfig extends AppCompatActivity implements ItemPickerDialogFra
             response.put(param1, param2);
         }
         if (response.get("m") == null) {
-            Toast.makeText(getApplicationContext(), "Bad response from device", Toast.LENGTH_LONG).show();
+            showFlashMessage("Bad response from device");
             return;
         }
         if (response.get("m").compareTo(methodWho) == 0) {
             if (response.get("fv") == null || response.get("fs") == null) {
-                Toast.makeText(getApplicationContext(), "Device not recognized", Toast.LENGTH_LONG).show();
+                showFlashMessage("Device not recognized");
                 return;
             }
             firmwareVersion = Integer.parseInt(response.get("fv"));
             firmwareSubversion = Integer.parseInt(response.get("fv"));
             if (firmwareVersion < minFirmwareVersionSupported) {
-                Toast.makeText(getApplicationContext(), "Firmware version not supported\nPlease choose another device", Toast.LENGTH_LONG).show();
+                showFlashMessage("Firmware version not supported\nPlease choose another device");
                 selectBluetoothDevice();
                 return;
             }
@@ -285,24 +292,24 @@ public class pfgeConfig extends AppCompatActivity implements ItemPickerDialogFra
             setMainView();
         }
         if (firmwareVersion == 0) {
-            Toast.makeText(getApplicationContext(), "Firmware version is not set\nPlease start again", Toast.LENGTH_LONG).show();
+            showFlashMessage("Firmware version is not set\nPlease start again");
             return;
         }
         if (firmwareVersion < minFirmwareVersionSupported) {
-            Toast.makeText(getApplicationContext(), "Firmware version not supported\nPlease choose another device", Toast.LENGTH_LONG).show();
+            showFlashMessage("Firmware version not supported\nPlease choose another device");
             selectBluetoothDevice();
             return;
         }
         if (response.get("m").compareTo(methodSet) == 0) {
             setMainView();
             processResponse(response);
-            Toast.makeText(getApplicationContext(), "SET & SYNC done at " + getCurrentDate(null), Toast.LENGTH_LONG).show();
+            showFlashMessage("SET & SYNC done at " + getCurrentDate(null));
             return;
         }
         if (response.get("m").compareTo(methodSync) == 0) {
             setMainView();
             processResponse(response);
-            Toast.makeText(getApplicationContext(), "SYNC done at " + getCurrentDate(null), Toast.LENGTH_LONG).show();
+            showFlashMessage("SYNC done at " + getCurrentDate(null));
             return;
         }
         if (response.get("m").compareTo(methodAutomaticEnd) == 0) {
@@ -310,11 +317,11 @@ public class pfgeConfig extends AppCompatActivity implements ItemPickerDialogFra
             return;
         }
         if (response.get("m").compareTo(methodUnknown) == 0) {
-            Toast.makeText(getApplicationContext(), "Unkown method requested", Toast.LENGTH_LONG).show();
+            showFlashMessage("Unkown method requested");
             return;
         }
         if (response.get("m").compareTo(methodCommunicationError) == 0) {
-            Toast.makeText(getApplicationContext(), "Communication error", Toast.LENGTH_LONG).show();
+            showFlashMessage("Communication error");
             return;
         }
     }
@@ -461,7 +468,7 @@ public class pfgeConfig extends AppCompatActivity implements ItemPickerDialogFra
             );
             itemPickerDialogFragmentDialog.show(getFragmentManager(), "ItemPickerBtSelector");
         } else {
-            Toast.makeText(getApplicationContext(), "No paired devices. Add one and retry", Toast.LENGTH_LONG).show();
+            showFlashMessage("No paired devices. Add one and retry");
         }
     }
 
@@ -623,11 +630,11 @@ public class pfgeConfig extends AppCompatActivity implements ItemPickerDialogFra
                 return true;
 
             case R.id.loadProgram:
-                loadProgram();
+                initLoadProgram();
                 return true;
 
             case R.id.saveProgram:
-                saveProgram();
+                initSaveProgram();
                 return true;
 
             case R.id.deleteProgram:
@@ -647,10 +654,10 @@ public class pfgeConfig extends AppCompatActivity implements ItemPickerDialogFra
     }
 
     private boolean deleteProgram() {
-        if(hasCustomPrograms()){
-            loadProgram("Select program to delete", "ItemPickerProgramDelete");
-        } else{
-            Toast.makeText(getApplicationContext(), "You have no programs", Toast.LENGTH_LONG).show();
+        if (hasCustomPrograms()) {
+            listPrograms("Select program to delete", "ItemPickerProgramDelete");
+        } else {
+            showFlashMessage("You have no custom programs");
         }
         return false;
     }
@@ -661,21 +668,25 @@ public class pfgeConfig extends AppCompatActivity implements ItemPickerDialogFra
             String toRemove = "";
             for (String programa : stringSetProgramas) {
                 String[] programaPars = programa.split(programasStringSetSep);
-                if (programaPars[0] == programName) {
+                if (programaPars[0].compareTo(programName) == 0) {
                     toRemove = programa;
                     break;
                 }
             }
             if (!toRemove.isEmpty()) {
                 stringSetProgramas.remove(toRemove);
-                settingsEditor.putStringSet(programasStringSetName, stringSetProgramas);
-                settingsEditor.commit();
-                Toast.makeText(getApplicationContext(), "Deleted", Toast.LENGTH_LONG).show();
+                if (stringSetProgramas.isEmpty()) {
+                    settingsEditor.remove(programasStringSetName);
+                    settingsEditor.commit();
+                } else {
+                    settingsEditor.putStringSet(programasStringSetName, stringSetProgramas);
+                    settingsEditor.commit();
+                }
+                showFlashMessage("Deleted");
                 return;
             }
         }
-
-        Toast.makeText(getApplicationContext(), "Error while deleting", Toast.LENGTH_LONG).show();
+        showFlashMessage("Error while deleting");
     }
 
 
@@ -689,7 +700,8 @@ public class pfgeConfig extends AppCompatActivity implements ItemPickerDialogFra
                 "o=f@p=f@r=t@a=120@w=3@rs=1@re=25@rd=24@da=t@dui=3@bui=10@btac=t@bts=14@btm=3",
                 "NEB",
                 "N0342S",
-                "0.5X TBE\n6 volts/cm",
+                "15–291 kb",
+                "0.5X TBE | 6 volts/cm",
                 "https://international.neb.com/products/n0342-midrange-pfg-marker",
                 true
         ));
@@ -698,7 +710,8 @@ public class pfgeConfig extends AppCompatActivity implements ItemPickerDialogFra
                 "o=f@p=f@r=t@a=120@w=3@rs=26@re=228@rd=26@da=t@dui=3@bui=10@btac=t@bts=14@btm=3",
                 "BIO-RAD",
                 "1703605",
-                "0.5X TBE\n6 volts/cm",
+                "0.225–2.2 Mb",
+                "0.5X TBE | 6 volts/cm",
                 "https://www.researchgate.net/post/How_to_figure_out_a_PFGE_protocol",
                 true
         ));
@@ -712,6 +725,7 @@ public class pfgeConfig extends AppCompatActivity implements ItemPickerDialogFra
                         programaPars[1],
                         "",
                         "",
+                        "",
                         programaPars[2],
                         "",
                         false
@@ -721,18 +735,18 @@ public class pfgeConfig extends AppCompatActivity implements ItemPickerDialogFra
         return false;
     }
 
-    private void loadProgram() {
-        loadProgram("Select program", "ItemPickerProgram");
+    private void initLoadProgram() {
+        listPrograms("Select program", "ItemPickerProgram");
     }
 
-    private void loadProgram(String title, String tag) {
-        Boolean justCustom=tag=="ItemPickerProgramDelete"?true:false;
+    private void listPrograms(String title, String tag) {
+        Boolean justCustom = tag == "ItemPickerProgramDelete" ? true : false;
         loadPrograms();
         ArrayList<ItemPickerDialogFragment.Item> pickerItems = new ArrayList<>();
         for (Program program : programs) {
             // Add the name and address to an array adapter to show in a ListView
-            if(justCustom && program.defaultProgram) continue;
-            pickerItems.add(new ItemPickerDialogFragment.Item(program.name, program.getProgramDetail()));
+            if (justCustom && program.defaultProgram) continue;
+            pickerItems.add(new ItemPickerDialogFragment.Item(program.name, program.name));
         }
         ItemPickerDialogFragment itemPickerDialogFragmentDialog = ItemPickerDialogFragment.newInstance(
                 title,
@@ -752,23 +766,35 @@ public class pfgeConfig extends AppCompatActivity implements ItemPickerDialogFra
         return false;
     }
 
-    private boolean loadProgram(String programName) {
+    private void loadProgram(String programName) {
+        Map<String, String> programConfig = new HashMap<String, String>();
+        String programDetails = "";
         for (Program program : programs) {
             if (program.name == programName) {
-                Map<String, String> programConfig = new HashMap<String, String>();
                 for (String value : program.programConfig.split("@")) {
                     String param1 = value.split("=")[0];
                     String param2 = value.split("=")[1];
                     programConfig.put(param1, param2);
                 }
-                processResponse(programConfig);
-                return true;
+                programDetails = program.getProgramDetail();
+                break;
             }
         }
-        return false;
+        new AlertDialog.Builder(pfgeConfig.this)
+                .setTitle("Load program")
+                .setMessage(programDetails)
+                .setPositiveButton("OK. LOAD", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int whichButton) {
+                        processResponse(programConfig);
+                        showFlashMessage("Program loaded");
+                    }
+                })
+                .setNegativeButton(android.R.string.cancel, null)
+                .show();
     }
 
-    private boolean saveProgram() {
+    private boolean initSaveProgram() {
 
         // prepare input text view
         final EditText inputProgramName = new EditText(pfgeConfig.this);
@@ -813,22 +839,23 @@ public class pfgeConfig extends AppCompatActivity implements ItemPickerDialogFra
                                             settingsEditor.putStringSet(programasStringSetName, stringSetProgramas);
                                             settingsEditor.commit();
                                         }
-                                        Toast.makeText(getApplicationContext(), saveResultText, Toast.LENGTH_LONG).show();
+                                        showFlashMessage(saveResultText);
                                     }
                                 })
                                 .setNegativeButton(android.R.string.cancel, null)
                                 .show();
                     }
                 })
-                .setNegativeButton("REPLACE", new DialogInterface.OnClickListener() {
+                .setNeutralButton("REPLACE", new DialogInterface.OnClickListener() {
                     public void onClick(DialogInterface dialog, int whichButton) {
                         if (hasCustomPrograms()) {
-                            loadProgram("Select program to overwrite", "ItemPickerProgramOverwrite");
+                            listPrograms("Select program to overwrite", "ItemPickerProgramOverwrite");
                         } else {
-                            Toast.makeText(getApplicationContext(), "No custom programs to replace", Toast.LENGTH_LONG).show();
+                            showFlashMessage("No custom programs to replace");
                         }
                     }
                 })
+                .setNegativeButton(android.R.string.cancel, null)
                 .show();
         return false;
     }
@@ -836,32 +863,29 @@ public class pfgeConfig extends AppCompatActivity implements ItemPickerDialogFra
     private void overwriteProgram(String programName) {
         Set<String> stringSetProgramas = settings.getStringSet(programasStringSetName, new HashSet<>());
         if (!stringSetProgramas.isEmpty()) {
-            Log.d("overwriteProgram","here");
             String toRemove = "";
             for (String programa : stringSetProgramas) {
                 String[] programaPars = programa.split(programasStringSetSep);
-                if (programaPars[0] == programName) {
+                if (programaPars[0].compareTo(programName) == 0) {
                     toRemove = programa;
                     break;
                 }
             }
-            Log.d("toRemove",toRemove);
             if (!toRemove.isEmpty()) {
                 String[] newProgram = toRemove.split(programasStringSetSep);
                 stringSetProgramas.remove(toRemove);
                 String toAdd = newProgram[0] + programasStringSetSep + encondeParamsToString() + programasStringSetSep + newProgram[2];
-                if(stringSetProgramas.contains(toAdd)){
+                if (stringSetProgramas.contains(toAdd)) {
                     stringSetProgramas.remove(toAdd);
                 }
                 stringSetProgramas.add(toAdd);
                 settingsEditor.putStringSet(programasStringSetName, stringSetProgramas);
                 settingsEditor.commit();
-                Toast.makeText(getApplicationContext(), "Saved", Toast.LENGTH_LONG).show();
+                showFlashMessage("Saved");
                 return;
             }
         }
-
-        Toast.makeText(getApplicationContext(), "Error while overwriting", Toast.LENGTH_LONG).show();
+        showFlashMessage("Error while overwriting");
     }
 
     private void showAbout() {
@@ -891,4 +915,9 @@ public class pfgeConfig extends AppCompatActivity implements ItemPickerDialogFra
             }
         }
     };
+
+    private void showFlashMessage(String flashMessage) {
+        toast.setText(flashMessage);
+        toast.show();
+    }
 }
