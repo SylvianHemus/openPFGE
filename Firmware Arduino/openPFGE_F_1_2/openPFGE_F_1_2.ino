@@ -75,19 +75,17 @@ int rampEnd = 25; // final time movement in ramp on mode (seconds)
 int rampDuration = 24; // ramp time in ramp on mode (hours)
 
 // variables
-String inData; // capture serial inputs
-String method; // switch commands from serial input
-char tmpBuffer[100]; // temporal
+char inOutData[100]; // serial inputs & outpus
 bool autoEnd = false; // whether the program has automaticlly ended
 #define maxIntervalUpdate 60 // 60 seconds for maximum update interval
 int bufferTemperatureUpdateInterval = 10; // buffer temperature update interval (seconds)
 int oledLine = 1;
-#define methodSync "y"
-#define methodSet "s"
-#define methodWho "w"
-#define methodAutomaticEnd "a"
-#define methodUnknown "u"
-#define methodCommunicationError "c"
+char methodSync = 'y';
+char methodSet = 's';
+char methodWho = 'w';
+char methodAutomaticEnd = 'a';
+char methodUnknown = 'u';
+char methodCommunicationError = 'c';
 
 // timers
 Chrono runTimer(Chrono::SECONDS); // running timer
@@ -149,56 +147,59 @@ void loop() {
 void loopSerial() {
   if (BT.available())
   {
-    requestString();
+    requestBtData();
+    
+    char * pch;
+    char * method;
+    pch = strtok(inOutData, "@=");
 
-    // test message is complete
-    if (!inData.substring(0, 1).equals("<") || !inData.substring(inData.length() - 1).equals(">")) {
-      sprintf(tmpBuffer, "m=%s", methodCommunicationError);
-      btSendMessage(tmpBuffer);
-      return;
+    while (pch != NULL)
+    {
+      method = strtok(NULL, "@=");
+      if (strcmp(pch, "m") == 0) {
+        break;
+      }
+      pch = strtok(NULL, "@=");
     }
-    inData.remove(0, 1);
-    inData.remove(inData.length() - 1);
 
-    strcpy(tmpBuffer, inData.c_str());
-
-    strtok(strtok(tmpBuffer, "@"), "=");
-    method = strtok(NULL, "=");
-
-
-    if (method == methodWho) {
-      sprintf(tmpBuffer, "m=%s@fv=%d@fs=%d", methodWho, firmwareVersion, firmwareSubversion);
-      btSendMessage(tmpBuffer);
-    } else if (method == methodSync) {
+    if (method[0] == methodWho) {
+      sprintf(inOutData, "m=%c@fv=%d@fs=%d", methodWho, firmwareVersion, firmwareSubversion);
+      btSendMessage(inOutData);
+    } else if (method[0] == methodSync) {
       encodeCurrent();
-      sprintf(tmpBuffer + strlen(tmpBuffer), "@m=%s", methodSync);
-      btSendMessage(tmpBuffer);
-    } else if (method == methodAutomaticEnd) {
-      sprintf(tmpBuffer, "m=%s", methodAutomaticEnd);
-      btSendMessage(tmpBuffer);
-    } else if (method == methodSet) {
+      sprintf(inOutData + strlen(inOutData), "@m=%c", methodSync);
+      btSendMessage(inOutData);
+    } else if (method[0] == methodAutomaticEnd) {
+      sprintf(inOutData, "m=%c", methodAutomaticEnd);
+      btSendMessage(inOutData);
+    } else if (method[0] == methodSet) {
+      serialDebugWrite("indata:");
+      serialDebugWrite(inOutData);
       setParams();
       encodeCurrent();
-      sprintf(tmpBuffer + strlen(tmpBuffer), "@m=%s", methodSet);
-      btSendMessage(tmpBuffer);
-    } else if (method == methodCommunicationError) {
+      sprintf(inOutData + strlen(inOutData), "@m=%c", methodSet);
+      serialDebugWrite("out   data:");
+      serialDebugWrite(inOutData);
+      btSendMessage(inOutData);
+    } else if (method[0] == methodCommunicationError) {
       displayCommError();
     } else {
-      sprintf(tmpBuffer, "m=%s", methodUnknown);
-      btSendMessage(tmpBuffer);
+      sprintf(inOutData, "m=%c", methodUnknown);
+      btSendMessage(inOutData);
     }
   }
 }
 
 void setParams() {
-  strcpy(tmpBuffer, inData.c_str());
   char * pch;
   char * pchv;
-  pch = strtok(tmpBuffer, "@=");
+  pch = strtok(inOutData, "@=");
+
   while (pch != NULL)
   {
     pchv = strtok(NULL, "@=");
     if (strcmp(pch, "o") == 0) {
+      serialDebugWrite("Processing o:");
       setOnOff(stob(pchv));
     } else if (strcmp(pch, "p") == 0) {
       setPause(stob(pchv));
@@ -352,19 +353,19 @@ void loopDisplay() {
             display.print(F("Ramp-WOP / "));
             display.print(wopAuto);
             display.println(F(" s"));
-            
+
             display.setCursor(0, oledLineHeight * oledLine);
             oledLine++;
             display.print(F("Ramp-Start / "));
             display.print(rampStart);
             display.println(F(" s"));
-            
+
             display.setCursor(0, oledLineHeight * oledLine);
             oledLine++;
             display.print(F("Ramp-End / "));
             display.print(rampEnd);
             display.println(F(" s"));
-            
+
             display.setCursor(0, oledLineHeight * oledLine);
             oledLine++;
             display.print(F("Ramp-Duration / "));
@@ -504,12 +505,12 @@ void setRamp(bool newRamp) {
   ramp = newRamp;
 }
 
-String requestString() {
+void requestBtData() {
   if (BT.available()) {
-    inData =  BT.readString();
+    strcpy(inOutData, BT.readString().c_str());
     return;
   }
-  inData =  "";
+  sprintf(inOutData, "");
 }
 
 void serialDebugWrite(String outputtext) {
@@ -525,7 +526,7 @@ void serialDebugWrite(String outputtext) {
 }
 
 void encodeCurrent() {
-  sprintf(tmpBuffer, "o=%s@p=%s@r=%s@a=%d@w=%d@rs=%d@re=%d@rd=%d@aw=%d@bt=%d@hr=%lu@ae=%s@da=%s@dui=%d@bui=%d@btac=%s@bts=%d@btm=%d",
+  sprintf(inOutData, "o=%c@p=%c@r=%c@a=%d@w=%d@rs=%d@re=%d@rd=%d@aw=%d@bt=%d@hr=%lu@ae=%c@da=%c@dui=%d@bui=%d@btac=%c@bts=%d@btm=%d",
           btos(onoff),
           btos(pause),
           btos(ramp),
@@ -547,12 +548,11 @@ void encodeCurrent() {
          );
 }
 
-void btSendMessage(String message) {
+void btSendMessage(char * message) {
   btSendMessage(message, true);
 }
 
-void btSendMessage(String message, bool newLine) {
-  message = "<" + message + ">";
+void btSendMessage(char * message, bool newLine) {
   if (newLine) {
     BT.println(message);
   } else {
@@ -560,16 +560,16 @@ void btSendMessage(String message, bool newLine) {
   }
 }
 
-int stoi(String convert) {
-  return convert.toInt();
+int stoi(char * convert) {
+  return atoi(convert);
 }
 
 bool stob(char * convert) {
   return strcmp(convert, "t") == 0 ? true : false;
 }
 
-char * btos(bool convert) {
-  return convert ? "t" : "f";
+char btos(bool convert) {
+  return convert ? 't' : 'f';
 }
 
 char * secondsToTime(unsigned long t)

@@ -201,7 +201,6 @@ public class pfgeConfig extends AppCompatActivity implements ItemPickerDialogFra
                 finalRequest += "@" + entry.getKey() + "=" + entry.getValue();
             }
         }
-        finalRequest = "<" + finalRequest + ">";
         deviceInterface.sendMessage(finalRequest);
         showFlashMessage("Requesting " + methodName.get(method) + " method");
     }
@@ -258,13 +257,6 @@ public class pfgeConfig extends AppCompatActivity implements ItemPickerDialogFra
     }
 
     private void onMessageReceived(String message) {
-        // Check
-        if (!message.startsWith("<") || !message.endsWith(">")) {
-            showFlashMessage("Communication error");
-            requestMethodCommunicationError();
-            return;
-        }
-        message = message.substring(1, message.length() - 1);
         // We received a message! Handle it here.
         Map<String, String> response = new HashMap<String, String>();
         for (String value : message.split("@")) {
@@ -723,12 +715,7 @@ public class pfgeConfig extends AppCompatActivity implements ItemPickerDialogFra
                 programs.add(new Program(
                         programaPars[0],
                         programaPars[1],
-                        "",
-                        "",
-                        "",
-                        programaPars[2],
-                        "",
-                        false
+                        programaPars[2]
                 ));
             }
         }

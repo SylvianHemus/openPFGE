@@ -21,6 +21,17 @@ public class Program {
         this.sizeRange=sizeRange;
     }
 
+    public Program(String name, String programConfig, String customMessage) {
+        this.name = name;
+        this.programConfig = programConfig;
+        this.customMessage = customMessage;
+        this.defaultProgram = false;
+        this.productBrand = null;
+        this.productCode = null;
+        this.programInfoSource = null;
+        this.sizeRange=null;
+    }
+
     public String getProgramDetail() {
         String programDetail = "";
         String lineBreak = "\n";
