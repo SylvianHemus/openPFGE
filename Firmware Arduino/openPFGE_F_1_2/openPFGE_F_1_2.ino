@@ -28,7 +28,7 @@ VarSpeedServo servo; // the servo object
 #define servoPin 9 // PWM signal pin
 #define servoUsFrom 500 // minimum microseconds // for ds3218
 #define servoUsTo 2500 // maximum microseconds // for ds3218
-#define servoVelocity 255 // 0=full speed, 1-255 slower to faster
+#define servoVelocity 150 // 0=full speed, 1-255 slower to faster
 #define waitForMotorMove true // programs wait until motor end moving
 int motorPosition = 0; // store current motor position (-1 = left, 0 = center, 1 = right)
 
@@ -75,7 +75,7 @@ int rampEnd = 25; // final time movement in ramp on mode (seconds)
 int rampDuration = 24; // ramp time in ramp on mode (hours)
 
 // variables
-char inOutData[100]; // serial inputs & outpus
+char inOutData[200]; // serial inputs & outpus
 bool autoEnd = false; // whether the program has automaticlly ended
 #define maxIntervalUpdate 60 // 60 seconds for maximum update interval
 int bufferTemperatureUpdateInterval = 10; // buffer temperature update interval (seconds)
@@ -148,7 +148,7 @@ void loopSerial() {
   if (BT.available())
   {
     requestBtData();
-    
+
     char * pch;
     char * method;
     pch = strtok(inOutData, "@=");
@@ -173,13 +173,9 @@ void loopSerial() {
       sprintf(inOutData, "m=%c", methodAutomaticEnd);
       btSendMessage(inOutData);
     } else if (method[0] == methodSet) {
-      serialDebugWrite("indata:");
-      serialDebugWrite(inOutData);
       setParams();
       encodeCurrent();
       sprintf(inOutData + strlen(inOutData), "@m=%c", methodSet);
-      serialDebugWrite("out   data:");
-      serialDebugWrite(inOutData);
       btSendMessage(inOutData);
     } else if (method[0] == methodCommunicationError) {
       displayCommError();
@@ -199,7 +195,6 @@ void setParams() {
   {
     pchv = strtok(NULL, "@=");
     if (strcmp(pch, "o") == 0) {
-      serialDebugWrite("Processing o:");
       setOnOff(stob(pchv));
     } else if (strcmp(pch, "p") == 0) {
       setPause(stob(pchv));
@@ -549,15 +544,7 @@ void encodeCurrent() {
 }
 
 void btSendMessage(char * message) {
-  btSendMessage(message, true);
-}
-
-void btSendMessage(char * message, bool newLine) {
-  if (newLine) {
-    BT.println(message);
-  } else {
-    BT.print(message);
-  }
+  BT.println(message);
 }
 
 int stoi(char * convert) {

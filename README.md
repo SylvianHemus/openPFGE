@@ -62,7 +62,7 @@ Design of motor support was made based on [BT103](https://www.btlabsystems.com/A
 - 2 X 7mm diameter / 5 mm height N35 magnet [like this one](https://aliexpress.com/item/32277590868.html)
 - 30 cm fishing line
 
-## Refigeration system
+### Refigeration system
 - Peristaltic Pump 12V [like this one](https://aliexpress.com/item/32882495060.html)
 - Peltier cooler 12V [like this one](https://aliexpress.com/item/33028954404.html)
 
