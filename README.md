@@ -26,7 +26,7 @@ The equipment is capable of the separation of DNA molecules up to ~2 Mbp [See *F
 
 1. Aquire all components listed in the hardware part list section
 2. Print all parts in the last folder of *3D printing* folder using PLA at 0.25mm layer height, except for *pin.FCStd* that had 0.1mm layer height.
-<details>
+><details>
   <summary>Parts built and assembled</summary>
 ![Gel_tray](Pictures/Gel_tray.jpg)
 **Fig. 2 |** Gel tray<br/><br/>
@@ -34,13 +34,13 @@ The equipment is capable of the separation of DNA molecules up to ~2 Mbp [See *F
 **Fig. 3 |** Servo motor support and join<br/><br/>
 </details>
 3. Using some strong glue, put the magnets in the *motor joint* part as shown in *Pictures/Magnets_motor_joint.jpg* and in the *tray cover joint* part
-<details>
+><details>
   <summary>Magnets position</summary>
 ![Magnets_motor_joint](Pictures/Magnets_motor_joint.jpg)
 **Fig. 4 |** Magnets motor joint<br/><br/>
 </details>
 4. Using some fishing line build the gel tray as shown in *Pictures/Gel_tray.jpg*
-<details>
+><details>
   <summary>Gel tray fishing line</summary>
 ![Gel_tray](Pictures/Gel_tray.jpg)
 **Fig. 3 |** Gel tray fishing line<br/><br/>
