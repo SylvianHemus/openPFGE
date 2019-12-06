@@ -25,26 +25,9 @@ The equipment is capable of the separation of DNA molecules up to ~2 Mbp [See *F
 # Fabrication and assembly
 
 1. Aquire all components listed in the hardware part list section
-2. Print all parts in the last folder of *3D printing* folder using PLA at 0.25mm layer height, except for *pin.FCStd* that had 0.1mm layer height.
-><details>
-  <summary>Parts built and assembled</summary>
-![Gel_tray](Pictures/Gel_tray.jpg)
-**Fig. 2 |** Gel tray<br/><br/>
-![Servo_motor_support_and_join](Pictures/Servo_motor_support_and_join.jpg)
-**Fig. 3 |** Servo motor support and join<br/><br/>
-</details>
+2. Print all parts in the last folder of *3D printing* folder using PLA at 0.25mm layer height, except for *pin.FCStd* that had 0.1mm layer height. See *Pictures/Gel_tray.jpg* and *Pictures/Servo_motor_support_and_join.jpg* to see how they look like in the final assembly.
 3. Using some strong glue, put the magnets in the *motor joint* part as shown in *Pictures/Magnets_motor_joint.jpg* and in the *tray cover joint* part
-><details>
-  <summary>Magnets position</summary>
-![Magnets_motor_joint](Pictures/Magnets_motor_joint.jpg)
-**Fig. 4 |** Magnets motor joint<br/><br/>
-</details>
 4. Using some fishing line build the gel tray as shown in *Pictures/Gel_tray.jpg*
-><details>
-  <summary>Gel tray fishing line</summary>
-![Gel_tray](Pictures/Gel_tray.jpg)
-**Fig. 3 |** Gel tray fishing line<br/><br/>
-</details>
 5. Fabricate the circuit PCB using the last version of the *fzz* file in the *Circuit* folder. You can find a good price and service at [AISLER](https://aisler.net/)
 6. Assemble the circuit by soldering the parts to the PCB. The PCB has the description of the components on its skilscreen
 7. Assemble the servo motor to its printed support. Attach the *motor joint* to the servo arm.
