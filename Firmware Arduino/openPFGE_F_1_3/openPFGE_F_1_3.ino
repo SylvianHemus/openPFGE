@@ -2,7 +2,7 @@
 // servo: Pin 9 (& 5v (4.8 - 7.2 V) to power source)
 // thermoresistor: GND and A0 (& 10 kohm from Pin A0 to 3.3V && wire 3.3V with AREF on arduino)
 // bluetooth hc-05: RX --> Pin 11 & TX --> Pin 10 (& 5v to power source)
-// OLED/I2C VCC -> 5V / GND -> GND / SDA -> A4 / SCK/SCL -> A5
+// LCD/I2C VCC -> 5V / GND -> GND / SDA -> A4 / SCK/SCL -> A5
 // Mosfet Pump --> Pin 3
 // Mosfet Fan 1 --> Pin 5
 // Mosfet Fan 2 --> Pin 6
@@ -13,8 +13,8 @@
 #include <SoftwareSerial.h>
 #include <Chrono.h>
 #include <VarSpeedServo.h>
-#include <SSD1306Ascii.h>
-#include <SSD1306AsciiAvrI2c.h>
+#include <Wire.h>
+#include <LiquidCrystal_I2C.h>
 
 // firmware
 #define firmwareVersion 1
@@ -36,15 +36,14 @@ int motorPosition = 0; // store current motor position (-1 = left, 0 = center, 1
 // bluetooth
 SoftwareSerial BT(10, 11); // TX, RX
 
-// OLED / I2C
-#define I2C_ADDRESS 0x3C
-#define RST_PIN -1
-SSD1306AsciiAvrI2c display;
+// LCD / I2C
 Chrono displayTimer(Chrono::SECONDS); // Chrono for info update and view change
 bool displayActive = true; // update display info?
-int displayUpdateInfoInterval = 5; // display update info interval (seconds)
-#define oledLineHeight 1
+int displayUpdateInfoInterval = 2; // display update info interval (seconds)
 int lastDisplayState = -1;
+int lastDisplayParameter = 0;
+bool lcdBacklight = false;
+LiquidCrystal_I2C display(0x27, 16, 2); // Direction 0x27 & 16 cols & 2 rows
 
 // temperature control
 int bufferTemperature = 0; // current read of buffer temperature
@@ -76,11 +75,10 @@ int rampEnd = 25; // final time movement in ramp on mode (seconds)
 int rampDuration = 24; // ramp time in ramp on mode (hours)
 
 // variables
-char inOutData[200]; // serial inputs & outpus
+char inOutData[100]; // serial inputs & outpus
 bool autoEnd = false; // whether the program has automaticlly ended
 #define maxIntervalUpdate 60 // 60 seconds for maximum update interval
 int bufferTemperatureUpdateInterval = 10; // buffer temperature update interval (seconds)
-int oledLine = 1;
 char methodSync = 'y';
 char methodSet = 's';
 char methodWho = 'w';
@@ -125,9 +123,7 @@ void setup() {
   serialDebugWrite(F("Setup done"));
 
   // display init and splash
-  display.begin(&Adafruit128x64, I2C_ADDRESS);
-  display.clear();
-  display.setFont(System5x7);
+  display.init();
   displaySplash();
 }
 
@@ -142,7 +138,7 @@ void loop() {
   loopBufferTemperature();
 
   // display loop
-  //loopDisplay();
+  loopDisplay();
 }
 
 void loopSerial() {
@@ -172,6 +168,7 @@ void loopSerial() {
       encodeCurrent();
       sprintf(inOutData + strlen(inOutData), "@m=%c", methodSync);
       btSendMessage(inOutData);
+      displayParamSent();
     } else if (method[0] == methodAutomaticEnd) {
       sprintf(inOutData, "m=%c", methodAutomaticEnd);
       btSendMessage(inOutData);
@@ -217,6 +214,8 @@ void setParams() {
       autoEnd = false; // set to false always if it is set
     } else if (strcmp(pch, "da") == 0) {
       displayActive = stob(pchv);
+      if (!displayActive)
+        display.clear();
     } else if (strcmp(pch, "dui") == 0) {
       displayUpdateInfoInterval = constrain(stoi(pchv), 1, maxIntervalUpdate);
     } else if (strcmp(pch, "bui") == 0) {
@@ -227,6 +226,12 @@ void setParams() {
       bufferTemperatureSetpoint = constrain(stoi(pchv), bufferTemperatureSetpointMin, bufferTemperatureSetpointMax);
     } else if (strcmp(pch, "btm") == 0) {
       bufferTemperatureMaxError = constrain(stoi(pchv), bufferTemperatureMaxErrorMin, bufferTemperatureMaxErrorMax);
+    } else if (strcmp(pch, "lb") == 0) {
+      lcdBacklight = stob(pchv);
+      if (lcdBacklight)
+        display.backlight();
+      else
+        display.noBacklight();
     }
     pch = strtok(NULL, "@=");
   }
@@ -287,12 +292,9 @@ void loopDisplay() {
       if (lastDisplayState == 1) return;
       lastDisplayState = 1;
       display.clear();
-      display.set2X();
-      display.setCursor(10, 0);
-      display.print(F("automatic"));
-      display.setCursor(50, 20);
-      display.print(F("END"));
-      display.setCursor(10, 50);
+      display.setCursor(0, 0);
+      display.print(F("Automatic end"));
+      display.setCursor(0, 1);
       display.print(secondsToTime(runTimer.elapsed()));
     } else {
       // OnOff
@@ -301,88 +303,87 @@ void loopDisplay() {
           if (lastDisplayState == 2) return;
           lastDisplayState = 2;
           display.clear();
-          display.set2X();
-          display.setCursor(30, 1);
-          display.print(F("Paused"));
-          display.setCursor(20, 5);
+          display.setCursor(0, 0);
+          display.print(F("Paused "));
           display.print(secondsToTime(runTimer.elapsed()));
         } else { // system on
           if (lastDisplayState != 3) {
             display.clear();
+            lastDisplayParameter = 0;
           }
           lastDisplayState = 3;
-          oledLine = 1;
-          display.set1X();
 
           display.setCursor(0, 0);
-          display.print(F("System / Running"));
+          display.print(F("Running "));
 
           // Timer
-          display.setCursor(0, oledLineHeight * oledLine);
-          oledLine++;
-          display.print(F("Run time / "));
           display.print(secondsToTime(runTimer.elapsed()));
 
+          display.setCursor(0, 1);
+          display.print("                ");
+          display.setCursor(0, 1);
+
           // Angle
-          display.setCursor(0, oledLineHeight * oledLine);
-          oledLine++;
-          display.print(F("Angle / "));
-          display.print(angle);
-          display.print(F("°"));
+          if (lastDisplayParameter == 0) {
+            display.print(F("Angle / "));
+            display.print(angle);
+            display.print(F(" deg"));
+          }
 
           // Buffer temperature
-          display.setCursor(0, oledLineHeight * oledLine);
-          oledLine++;
-          display.print(F("Buffer temp. / "));
-          display.print(bufferTemperature);
-          display.print(F(" C"));
-
-          // Ramp
-          if (!ramp) {
-            display.setCursor(0, oledLineHeight * oledLine);
-            oledLine++;
-            display.print(F("Ramp / Off"));
+          if (lastDisplayParameter == 1) {
+            display.print(F("B-Temp / "));
+            display.print(bufferTemperature);
+            display.print(F(" C"));
           }
 
           // Wop/ramp
-          display.setCursor(0, oledLineHeight * oledLine);
-          oledLine++;
+          int lastDisplayParameterMax = 6;
           if (ramp) {
-            display.print(F("Ramp-WOP / "));
-            display.print(wopAuto);
-            display.print(F(" s"));
+            if (lastDisplayParameter == 2) {
+              display.print(F("R-WOP / "));
+              display.print(wopAuto);
+              display.print(F(" s"));
+            }
 
-            display.setCursor(0, oledLineHeight * oledLine);
-            oledLine++;
-            display.print(F("Ramp-Start / "));
-            display.print(rampStart);
-            display.print(F(" s"));
+            if (lastDisplayParameter == 3) {
+              display.print(F("R-Start / "));
+              display.print(rampStart);
+              display.print(F(" s"));
+            }
 
-            display.setCursor(0, oledLineHeight * oledLine);
-            oledLine++;
-            display.print(F("Ramp-End / "));
-            display.print(rampEnd);
-            display.print(F(" s"));
+            if (lastDisplayParameter == 4) {
+              display.print(F("R-End / "));
+              display.print(rampEnd);
+              display.print(F(" s"));
+            }
 
-            display.setCursor(0, oledLineHeight * oledLine);
-            oledLine++;
-            display.print(F("Ramp-Duration / "));
-            display.print(rampDuration);
-            display.print(F(" h"));
+            if (lastDisplayParameter == 5) {
+              display.print(F("R-Dura / "));
+              display.print(rampDuration);
+              display.print(F(" h"));
+            }
           } else {
-            display.print(F("WOP / "));
-            display.print(wop);
-            display.print(F(" s"));
+            if (lastDisplayParameter == 2) {
+              display.print(F("WOP / "));
+              display.print(wop);
+              display.print(F(" s"));
+            }
+            lastDisplayParameterMax = 3;
+          }
+
+          lastDisplayParameter++;
+          if (lastDisplayParameter == lastDisplayParameterMax) {
+            lastDisplayParameter = 0;
           }
         }
       } else { // system off
         if (lastDisplayState == 4) return;
         lastDisplayState = 4;
         display.clear();
-        display.set2X();
-        display.setCursor(30, 1);
+        display.setCursor(5, 0);
         display.print(F("System"));
-        display.setCursor(50, 5);
+        display.setCursor(7, 1);
         display.print(F("Off"));
       }
     }
@@ -392,13 +393,26 @@ void loopDisplay() {
 void displaySplash() {
   if (displayActive) {
     display.clear();
-    display.set2X();
-    display.setCursor(40, 1);
+    display.setCursor(6, 0);
     display.print(F("open"));
-    display.setCursor(40, 5);
+    display.setCursor(6, 1);
     display.print(F("PFGE"));
 
     delay(2000);
+  }
+}
+
+void displayParamSent() {
+  if (displayActive) {
+    display.clear();
+
+    display.setCursor(4, 0);
+    display.print(F("Parameters"));
+    display.setCursor(7, 1);
+    display.print(F("Sent"));
+    lastDisplayState = -1;
+
+    delay(1000);
   }
 }
 
@@ -406,10 +420,9 @@ void displayParamUpdated() {
   if (displayActive) {
     display.clear();
 
-    display.set2X();
-    display.setCursor(5, 1);
+    display.setCursor(4, 0);
     display.print(F("Parameters"));
-    display.setCursor(25, 5);
+    display.setCursor(5, 1);
     display.print(F("Updated"));
     lastDisplayState = -1;
 
@@ -420,12 +433,8 @@ void displayParamUpdated() {
 void displayCommError() {
   if (displayActive) {
     display.clear();
-
-    display.set2X();
-    display.setCursor(5, 1);
-    display.print(F("Communication"));
-    display.setCursor(30, 5);
-    display.print(F("Error"));
+    display.setCursor(0, 0);
+    display.print(F("Communication Error"));
     lastDisplayState = -1;
 
     delay(1000);
@@ -524,7 +533,7 @@ void serialDebugWrite(String outputtext) {
 }
 
 void encodeCurrent() {
-  sprintf(inOutData, "o=%c@p=%c@r=%c@a=%d@w=%d@rs=%d@re=%d@rd=%d@aw=%d@bt=%d@hr=%lu@ae=%c@da=%c@dui=%d@bui=%d@btac=%c@bts=%d@btm=%d",
+  sprintf(inOutData, "o=%c@p=%c@r=%c@a=%d@w=%d@rs=%d@re=%d@rd=%d@aw=%d@bt=%d@hr=%lu@ae=%c@da=%c@dui=%d@bui=%d@btac=%c@bts=%d@btm=%d@lb=%c",
           btos(onoff),
           btos(pause),
           btos(ramp),
@@ -542,7 +551,8 @@ void encodeCurrent() {
           bufferTemperatureUpdateInterval, // end deep config
           btos(bufferTemperatureAutomaticControl),
           bufferTemperatureSetpoint,
-          bufferTemperatureMaxError
+          bufferTemperatureMaxError,
+          btos(lcdBacklight)
          );
 }
 
@@ -570,7 +580,7 @@ char * secondsToTime(unsigned long t)
   t = t % 3600;
   int m = (int) t / 60;
   int s = (int) t % 60;
-  sprintf(str, "%d:%02d:%02d", h, m, s);
+  sprintf(str, "%02d:%02d:%02d", h, m, s);
   return str;
 }
 

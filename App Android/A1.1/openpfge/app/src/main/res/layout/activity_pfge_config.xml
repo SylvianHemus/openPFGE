@@ -407,6 +407,16 @@
             android:text="Display Active"
             android:tooltipText="Display On/Off" />
 
+        <Switch
+            android:id="@+id/switchDisplayBacklight"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+
+            android:paddingTop="8dp"
+            android:paddingBottom="8dp"
+            android:text="Display Backlight"
+            android:tooltipText="Display Backlight On/Off" />
+
         <LinearLayout
             android:id="@+id/wrapDisplayUpdateInterval"
             android:layout_width="match_parent"

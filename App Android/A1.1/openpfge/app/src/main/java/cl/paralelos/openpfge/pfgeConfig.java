@@ -53,6 +53,7 @@ public class pfgeConfig extends AppCompatActivity implements ItemPickerDialogFra
     Switch switchPause;
     Switch switchRamp;
     Switch switchDisplayActive;
+    Switch switchDisplayBacklight;
     Switch switchBufferTemperatureAutomaticControl;
     LinearLayout wrapWop;
     LinearLayout wrapRampStart;
@@ -164,6 +165,7 @@ public class pfgeConfig extends AppCompatActivity implements ItemPickerDialogFra
         params.put("btac", switchBufferTemperatureAutomaticControl.isChecked() ? "t" : "f");
         params.put("bts", editTextBufferTemperatureSetpoint.getText().toString());
         params.put("btm", editTextBufferTemperatureMaxError.getText().toString());
+        params.put("lb", switchDisplayBacklight.isChecked() ? "t" : "f");
         return params;
     }
 
@@ -388,6 +390,9 @@ public class pfgeConfig extends AppCompatActivity implements ItemPickerDialogFra
                 case "btm":
                     editTextBufferTemperatureMaxError.setText(entry.getValue());
                     break;
+                case "lb":
+                    switchDisplayBacklight.setChecked("t".equals(entry.getValue()));
+                    break;
                 default:
                     break;
             }
@@ -425,8 +430,10 @@ public class pfgeConfig extends AppCompatActivity implements ItemPickerDialogFra
         // Display
         if (switchDisplayActive.isChecked()) {
             wrapDisplayUpdateInterval.setVisibility(View.VISIBLE);
+            switchDisplayBacklight.setVisibility(View.VISIBLE);
         } else {
             wrapDisplayUpdateInterval.setVisibility(View.GONE);
+            switchDisplayBacklight.setVisibility(View.GONE);
         }
     }
 
@@ -520,6 +527,7 @@ public class pfgeConfig extends AppCompatActivity implements ItemPickerDialogFra
         switchPause = (Switch) findViewById(R.id.switchPause);
         switchRamp = (Switch) findViewById(R.id.switchRamp);
         switchDisplayActive = (Switch) findViewById(R.id.switchDisplayActive);
+        switchDisplayBacklight = (Switch) findViewById(R.id.switchDisplayBacklight);
         switchBufferTemperatureAutomaticControl = (Switch) findViewById(R.id.switchBufferTemperatureAutomaticControl);
 
         wrapWop = (LinearLayout) findViewById(R.id.wrapWop);

@@ -82,8 +82,8 @@ HC-05  [like this one](https://aliexpress.com/item/32953559442.html)
 - 12V / 30 A power source [like this one](https://aliexpress.com/item/32917708245.html)
 - Power switch
 
-### OLED
-OLED 128X64 I2C SSD1306 12864 [like this one](https://aliexpress.com/item/32977643629.html)
+### LCD
+LCD I2C 16x2 [like this one](https://aliexpress.com/item/32786773241.html)
 
 ### Refigeration
 - 1 X Epoxy NTC thermistor temperature sensor 10K 1% [like this one](https://aliexpress.com/item/32654331022.html)
