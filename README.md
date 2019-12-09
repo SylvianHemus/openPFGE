@@ -99,6 +99,12 @@ OLED 128X64 I2C SSD1306 12864 [like this one](https://aliexpress.com/item/329776
 Available at [Google play](https://play.google.com/store/apps/details?id=cl.paralelos.openpfge).
 Source code available at *App Android* folder.
 
+# License
+
+- Hardware license: CERN Open Hardware License 1.2
+- Software license: GPL v3
+- Documentation license: CC BY 4.0 International
+
 # Thanks to
 ## app
 Item picker [link](https://gist.github.com/kristopherjohnson/660656bb9e18e23146c0)

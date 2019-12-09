@@ -151,7 +151,9 @@ void loopSerial() {
 
     char * pch;
     char * method;
-    pch = strtok(inOutData, "@=");
+    char * inOutDataForProcess = (char *)malloc(strlen(inOutData) + 1);
+    strcpy(inOutDataForProcess, inOutData);
+    pch = strtok(inOutDataForProcess, "@=");
 
     while (pch != NULL)
     {
@@ -173,9 +175,13 @@ void loopSerial() {
       sprintf(inOutData, "m=%c", methodAutomaticEnd);
       btSendMessage(inOutData);
     } else if (method[0] == methodSet) {
+  serialDebugWrite("Method set. In:");
+  serialDebugWrite(inOutData);
       setParams();
       encodeCurrent();
       sprintf(inOutData + strlen(inOutData), "@m=%c", methodSet);
+  serialDebugWrite("Method set. Out:");
+  serialDebugWrite(inOutData);
       btSendMessage(inOutData);
     } else if (method[0] == methodCommunicationError) {
       displayCommError();
