@@ -29,7 +29,7 @@ The equipment is capable of the separation of DNA molecules up to ~2 Mbp [See *F
 3. Using some strong glue, put the magnets in the *motor joint* part as shown in *Pictures/Magnets_motor_joint.jpg* and in the *tray cover joint* part
 4. Using some fishing line build the gel tray as shown in *Pictures/Gel_tray.jpg*
 5. Fabricate the circuit PCB using the last version of the *fzz* file in the *Circuit* folder. You can find a good price and service at [AISLER](https://aisler.net/)
-6. Assemble the circuit by soldering the parts to the PCB. The PCB has the description of the components on its skilscreen
+6. Assemble the circuit by soldering the parts to the PCB. The PCB has the description of the components on its skilscreen. A picture of the PCB assembly is at *Circuit/Pictures/Circuit_assembly.jpg*.
 7. Assemble the servo motor to its printed support. Attach the *motor joint* to the servo arm.
 8. Power the 12V power source to the circuit
 9. Download [the Android app](https://play.google.com/store/apps/details?id=cl.paralelos.openpfge)
@@ -75,7 +75,7 @@ Arduino Nano v3.0 ATMEGA328P [like this one](https://aliexpress.com/item/3282427
 HC-05  [like this one](https://aliexpress.com/item/32953559442.html)
 
 ### Power
-- L7805CV Transistor voltage regulator (1.5 A)
+- L7805CV Transistor voltage regulator (1.5 A) with a heat disipator
 - 100 uF capacitor
 - 10 uF capacitor
 - Diode 1A [like this one](https://components101.com/1n4007-diode)

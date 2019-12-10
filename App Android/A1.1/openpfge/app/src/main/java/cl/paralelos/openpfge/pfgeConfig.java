@@ -45,8 +45,6 @@ import java.util.concurrent.TimeUnit;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.schedulers.Schedulers;
 
-// https://github.com/harry1453/android-bluetooth-serial
-
 public class pfgeConfig extends AppCompatActivity implements ItemPickerDialogFragment.OnItemSelectedListener {
 
     Switch switchOnOff;
@@ -71,6 +69,7 @@ public class pfgeConfig extends AppCompatActivity implements ItemPickerDialogFra
     EditText editTextBufferTemperatureUpdateInterval;
     EditText editTextBufferTemperatureSetpoint;
     EditText editTextBufferTemperatureMaxError;
+    EditText editTextServoSpeed;
     TextView textViewAutoWop;
     TextView textViewBufferTemperature;
     TextView textViewHasRun;
@@ -81,8 +80,7 @@ public class pfgeConfig extends AppCompatActivity implements ItemPickerDialogFra
     private SimpleBluetoothDeviceInterface deviceInterface;
     BluetoothManager bluetoothManager;
     BluetoothAdapter mBluetoothAdapter;
-    private int firmwareVersion;
-    private int firmwareSubversion;
+    private int firmwareVersion = 0;
     private Integer minFirmwareVersionSupported;
     private SharedPreferences settings;
     private SharedPreferences.Editor settingsEditor;
@@ -90,12 +88,35 @@ public class pfgeConfig extends AppCompatActivity implements ItemPickerDialogFra
     final int REQUEST_ENABLE_BT = 0;
     final String settingsBluetoothAdress = "bta";
     final String settingsBluetoothName = "btn";
+
     final String methodSync = "y";
     final String methodSet = "s";
     final String methodWho = "w";
     final String methodAutomaticEnd = "a";
     final String methodUnknown = "u";
     final String methodCommunicationError = "c";
+
+    final String paramOpOnOff = "0";
+    final String paramOpPause = "1";
+    final String paramOpRamp = "2";
+    final String paramOpAngle = "3";
+    final String paramOpWop = "4";
+    final String paramOpAutoWop = "5";
+    final String paramOpHasRun= "6";
+    final String paramOpAutoEnd = "7";
+    final String paramOpRampStart = "8";
+    final String paramOpRampEnd = "9";
+    final String paramOpRampDuration = "10";
+    final String paramOpDisplayActive = "11";
+    final String paramOpDisplayUpdateInterval = "12";
+    final String paramOpBufferTemperature = "13";
+    final String paramOpBufferTemperatureUpdateInterval = "14";
+    final String paramOpBufferTemperatureAutomaticControl = "15";
+    final String paramOpBufferTemperatureSetpoint = "16";
+    final String paramOpBufferTemperatureMaxError = "17";
+    final String paramOpDisplayBacklight = "18";
+    final String paramOpServoSpeed = "19";
+
     Map<String, String> methodName = new HashMap<String, String>();
 
     final String programasStringSetName = "programas";
@@ -106,8 +127,6 @@ public class pfgeConfig extends AppCompatActivity implements ItemPickerDialogFra
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        firmwareVersion = Integer.parseInt(getResources().getString(R.string.app_firmware_version));
-        firmwareSubversion = Integer.parseInt(getResources().getString(R.string.app_firmware_subversion));
         minFirmwareVersionSupported = Integer.parseInt(getResources().getString(R.string.app_firmware_min_firmware_version_supported));
 
         settings = this.getSharedPreferences("bluetoothDevice", Context.MODE_PRIVATE);
@@ -150,22 +169,22 @@ public class pfgeConfig extends AppCompatActivity implements ItemPickerDialogFra
 
     private Map<String, String> encodeParams() {
         Map<String, String> params = new HashMap<String, String>();
-        params.put("o", switchOnOff.isChecked() ? "t" : "f");
-        params.put("p", switchPause.isChecked() ? "t" : "f");
-        params.put("r", switchRamp.isChecked() ? "t" : "f");
-        params.put("a", editTextAngle.getText().toString());
-        params.put("w", editTextWop.getText().toString());
-        params.put("rs", editTextRampStart.getText().toString());
-        params.put("re", editTextRampEnd.getText().toString());
-        params.put("rd", editTextRampDuration.getText().toString());
-        // deep config
-        params.put("da", switchDisplayActive.isChecked() ? "t" : "f");
-        params.put("dui", editTextDisplayUpdateInterval.getText().toString());
-        params.put("bui", editTextBufferTemperatureUpdateInterval.getText().toString());
-        params.put("btac", switchBufferTemperatureAutomaticControl.isChecked() ? "t" : "f");
-        params.put("bts", editTextBufferTemperatureSetpoint.getText().toString());
-        params.put("btm", editTextBufferTemperatureMaxError.getText().toString());
-        params.put("lb", switchDisplayBacklight.isChecked() ? "t" : "f");
+        params.put(paramOpOnOff, switchOnOff.isChecked() ? "t" : "f");
+        params.put(paramOpPause, switchPause.isChecked() ? "t" : "f");
+        params.put(paramOpRamp, switchRamp.isChecked() ? "t" : "f");
+        params.put(paramOpAngle, editTextAngle.getText().toString());
+        params.put(paramOpWop, editTextWop.getText().toString());
+        params.put(paramOpRampStart, editTextRampStart.getText().toString());
+        params.put(paramOpRampEnd, editTextRampEnd.getText().toString());
+        params.put(paramOpRampDuration, editTextRampDuration.getText().toString());
+        params.put(paramOpDisplayActive, switchDisplayActive.isChecked() ? "t" : "f");
+        params.put(paramOpDisplayUpdateInterval, editTextDisplayUpdateInterval.getText().toString());
+        params.put(paramOpDisplayBacklight, switchDisplayBacklight.isChecked() ? "t" : "f");
+        params.put(paramOpBufferTemperatureUpdateInterval, editTextBufferTemperatureUpdateInterval.getText().toString());
+        params.put(paramOpBufferTemperatureAutomaticControl, switchBufferTemperatureAutomaticControl.isChecked() ? "t" : "f");
+        params.put(paramOpBufferTemperatureSetpoint, editTextBufferTemperatureSetpoint.getText().toString());
+        params.put(paramOpBufferTemperatureMaxError, editTextBufferTemperatureMaxError.getText().toString());
+        params.put(paramOpServoSpeed, editTextServoSpeed.getText().toString());
         return params;
     }
 
@@ -241,6 +260,7 @@ public class pfgeConfig extends AppCompatActivity implements ItemPickerDialogFra
         bluetoothManager.closeDevice(bluetoothAdress);
         bluetoothManager.close();
         menuItemsHide();
+        firmwareVersion = 0;
     }
 
     private void onConnected(BluetoothSerialDevice connectedDevice) {
@@ -271,12 +291,11 @@ public class pfgeConfig extends AppCompatActivity implements ItemPickerDialogFra
             return;
         }
         if (response.get("m").compareTo(methodWho) == 0) {
-            if (response.get("fv") == null || response.get("fs") == null) {
+            if (response.get("fv") == null) {
                 showFlashMessage("Device not recognized");
                 return;
             }
             firmwareVersion = Integer.parseInt(response.get("fv"));
-            firmwareSubversion = Integer.parseInt(response.get("fv"));
             if (firmwareVersion < minFirmwareVersionSupported) {
                 showFlashMessage("Firmware version not supported\nPlease choose another device");
                 selectBluetoothDevice();
@@ -323,44 +342,44 @@ public class pfgeConfig extends AppCompatActivity implements ItemPickerDialogFra
     private void processResponse(Map<String, String> response) {
         for (Map.Entry<String, String> entry : response.entrySet()) {
             switch (entry.getKey()) {
-                case "o":
+                case paramOpOnOff:
                     switchOnOff.setChecked("t".equals(entry.getValue()));
                     break;
-                case "p":
+                case paramOpPause:
                     switchPause.setChecked("t".equals(entry.getValue()));
                     break;
-                case "r":
+                case paramOpRamp:
                     switchRamp.setChecked("t".equals(entry.getValue()));
                     break;
-                case "a":
+                case paramOpAngle:
                     editTextAngle.setText(entry.getValue());
                     break;
-                case "w":
+                case paramOpWop:
                     editTextWop.setText(entry.getValue());
                     break;
-                case "rs":
+                case paramOpRampStart:
                     editTextRampStart.setText(entry.getValue());
                     break;
-                case "re":
+                case paramOpRampEnd:
                     editTextRampEnd.setText(entry.getValue());
                     break;
-                case "rd":
+                case paramOpRampDuration:
                     editTextRampDuration.setText(entry.getValue());
                     break;
-                case "aw":
+                case paramOpAutoWop:
                     textViewAutoWop.setText(entry.getValue());
                     break;
-                case "bt":
+                case paramOpBufferTemperature:
                     textViewBufferTemperature.setText(entry.getValue());
                     break;
-                case "hr":
+                case paramOpHasRun:
                     long seconds = Integer.parseInt(entry.getValue());
                     String hms = String.format("%02d:%02d:%02d", TimeUnit.SECONDS.toHours(seconds),
                             TimeUnit.SECONDS.toMinutes(seconds) - TimeUnit.HOURS.toMinutes(TimeUnit.SECONDS.toHours(seconds)),
                             TimeUnit.SECONDS.toSeconds(seconds) - TimeUnit.MINUTES.toSeconds(TimeUnit.SECONDS.toMinutes(seconds)));
                     textViewHasRun.setText(hms);
                     break;
-                case "ae":
+                case paramOpAutoEnd:
                     if ("t".equals(entry.getValue())) {
                         setContentView(R.layout.activity_automatic_end);
                         LinearLayout linearLayoutTapToContinue = (LinearLayout) findViewById(R.id.linearLayoutTapToContinue);
@@ -371,27 +390,29 @@ public class pfgeConfig extends AppCompatActivity implements ItemPickerDialogFra
                         });
                     }
                     break;
-                // deep config
-                case "da":
+                case paramOpDisplayActive:
                     switchDisplayActive.setChecked("t".equals(entry.getValue()));
                     break;
-                case "dui":
+                case paramOpDisplayBacklight:
+                    switchDisplayBacklight.setChecked("t".equals(entry.getValue()));
+                    break;
+                case paramOpDisplayUpdateInterval:
                     editTextDisplayUpdateInterval.setText(entry.getValue());
                     break;
-                case "bui":
+                case paramOpBufferTemperatureUpdateInterval:
                     editTextBufferTemperatureUpdateInterval.setText(entry.getValue());
                     break;
-                case "btac":
+                case paramOpBufferTemperatureAutomaticControl:
                     switchBufferTemperatureAutomaticControl.setChecked("t".equals(entry.getValue()));
                     break;
-                case "bts":
+                case paramOpBufferTemperatureSetpoint:
                     editTextBufferTemperatureSetpoint.setText(entry.getValue());
                     break;
-                case "btm":
+                case paramOpBufferTemperatureMaxError:
                     editTextBufferTemperatureMaxError.setText(entry.getValue());
                     break;
-                case "lb":
-                    switchDisplayBacklight.setChecked("t".equals(entry.getValue()));
+                case paramOpServoSpeed:
+                    editTextServoSpeed.setText(entry.getValue());
                     break;
                 default:
                     break;
@@ -547,6 +568,7 @@ public class pfgeConfig extends AppCompatActivity implements ItemPickerDialogFra
         editTextBufferTemperatureUpdateInterval = findViewById(R.id.editTextBufferTemperatureUpdateInterval);
         editTextBufferTemperatureSetpoint = findViewById(R.id.editTextBufferTemperatureUpdateSetpoint);
         editTextBufferTemperatureMaxError = findViewById(R.id.editTextBufferTemperatureMaxError);
+        editTextServoSpeed = findViewById(R.id.editTextServoSpeed);
 
         final Button buttonChangeDevice = findViewById(R.id.buttonChangeDevice);
         final Button buttonDisconnectDevice = findViewById(R.id.buttonDisconnectDevice);
@@ -886,7 +908,7 @@ public class pfgeConfig extends AppCompatActivity implements ItemPickerDialogFra
     private void showAbout() {
         new AlertDialog.Builder(pfgeConfig.this)
                 .setTitle("About")
-                .setMessage("Version: " + firmwareVersion + "\nSubversion: " + firmwareSubversion + "\nSupport: https://gitlab.com/diegusleik/openpfge")
+                .setMessage("App version: " + firmwareVersion +"Min firmware supported version: " + minFirmwareVersionSupported  + "\nSupport: https://gitlab.com/diegusleik/openpfge")
                 .setNegativeButton(android.R.string.ok, null)
                 .show();
     }

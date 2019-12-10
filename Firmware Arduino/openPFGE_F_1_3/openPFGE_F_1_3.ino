@@ -17,8 +17,7 @@
 #include <LiquidCrystal_I2C.h>
 
 // firmware
-#define firmwareVersion 1
-#define firmwareSubversion 0
+#define firmwareVersion 2
 
 // debug
 #define serialDebug false // should the program outputs the debug by serial port
@@ -29,9 +28,9 @@ VarSpeedServo servo; // the servo object
 #define servoPin 9 // PWM signal pin
 #define servoUsFrom 500 // minimum microseconds // for ds3218
 #define servoUsTo 2500 // maximum microseconds // for ds3218
-#define servoVelocity 150 // 0=full speed, 1-255 slower to faster
 #define waitForMotorMove true // programs wait until motor end moving
 int motorPosition = 0; // store current motor position (-1 = left, 0 = center, 1 = right)
+int servoSpeed = 150;  // 0=full speed, 1-255 slower to faster
 
 // bluetooth
 SoftwareSerial BT(10, 11); // TX, RX
@@ -39,10 +38,10 @@ SoftwareSerial BT(10, 11); // TX, RX
 // LCD / I2C
 Chrono displayTimer(Chrono::SECONDS); // Chrono for info update and view change
 bool displayActive = true; // update display info?
-int displayUpdateInfoInterval = 2; // display update info interval (seconds)
+int displayUpdateInterval = 2; // display update info interval (seconds)
 int lastDisplayState = -1;
 int lastDisplayParameter = 0;
-bool lcdBacklight = false;
+bool displayBacklight = false;
 LiquidCrystal_I2C display(0x27, 16, 2); // Direction 0x27 & 16 cols & 2 rows
 
 // temperature control
@@ -85,6 +84,28 @@ char methodWho = 'w';
 char methodAutomaticEnd = 'a';
 char methodUnknown = 'u';
 char methodCommunicationError = 'c';
+
+// parameter options
+#define paramOpOnOff "0"
+#define paramOpPause "1"
+#define paramOpRamp "2"
+#define paramOpAngle "3"
+#define paramOpWop "4"
+#define paramOpAutoWop "5"
+#define paramOpHasRun "6"
+#define paramOpAutoEnd "7"
+#define paramOpRampStart "8"
+#define paramOpRampEnd "9"
+#define paramOpRampDuration "10"
+#define paramOpDisplayActive "11"
+#define paramOpDisplayUpdateInterval "12"
+#define paramOpBufferTemperature "13"
+#define paramOpBufferTemperatureUpdateInterval "14"
+#define paramOpBufferTemperatureAutomaticControl "15"
+#define paramOpBufferTemperatureSetpoint "16"
+#define paramOpBufferTemperatureMaxError "17"
+#define paramOpDisplayBacklight "18"
+#define paramOpServoSpeed "19"
 
 // timers
 Chrono runTimer(Chrono::SECONDS); // running timer
@@ -162,7 +183,7 @@ void loopSerial() {
     }
 
     if (method[0] == methodWho) {
-      sprintf(inOutData, "m=%c@fv=%d@fs=%d", methodWho, firmwareVersion, firmwareSubversion);
+      sprintf(inOutData, "m=%c@fv=%d", methodWho, firmwareVersion);
       btSendMessage(inOutData);
     } else if (method[0] == methodSync) {
       encodeCurrent();
@@ -194,44 +215,46 @@ void setParams() {
   while (pch != NULL)
   {
     pchv = strtok(NULL, "@=");
-    if (strcmp(pch, "o") == 0) {
+    if (strcmp(pch, paramOpOnOff) == 0) {
       setOnOff(stob(pchv));
-    } else if (strcmp(pch, "p") == 0) {
+    } else if (strcmp(pch, paramOpPause) == 0) {
       setPause(stob(pchv));
-    } else if (strcmp(pch, "r") == 0) {
+    } else if (strcmp(pch, paramOpRamp) == 0) {
       setRamp(stob(pchv));
-    } else if (strcmp(pch, "a") == 0) {
+    } else if (strcmp(pch, paramOpAngle) == 0) {
       angle = constrain(stoi(pchv), 1, 180);
-    } else if (strcmp(pch, "w") == 0) {
+    } else if (strcmp(pch, paramOpWop) == 0) {
       wop = constrain(stoi(pchv), 1, maxWop);
-    } else if (strcmp(pch, "rs") == 0) {
+    } else if (strcmp(pch, paramOpRampStart) == 0) {
       rampStart = constrain(stoi(pchv), 1, rampEnd - 1);
-    } else if (strcmp(pch, "re") == 0) {
+    } else if (strcmp(pch, paramOpRampEnd) == 0) {
       rampEnd = constrain(stoi(pchv), rampStart + 1, maxWop);
-    } else if (strcmp(pch, "rd") == 0) {
+    } else if (strcmp(pch, paramOpRampDuration) == 0) {
       rampDuration = constrain(stoi(pchv), 1, maxRampDuration);
-    } else if (strcmp(pch, "ae") == 0) {
+    } else if (strcmp(pch, paramOpAutoEnd) == 0) {
       autoEnd = false; // set to false always if it is set
-    } else if (strcmp(pch, "da") == 0) {
+    } else if (strcmp(pch, paramOpDisplayActive) == 0) {
       displayActive = stob(pchv);
       if (!displayActive)
         display.clear();
-    } else if (strcmp(pch, "dui") == 0) {
-      displayUpdateInfoInterval = constrain(stoi(pchv), 1, maxIntervalUpdate);
-    } else if (strcmp(pch, "bui") == 0) {
-      bufferTemperatureUpdateInterval = constrain(stoi(pchv), 1, maxIntervalUpdate);
-    } else if (strcmp(pch, "btac") == 0) {
-      bufferTemperatureAutomaticControl = stob(pchv);
-    } else if (strcmp(pch, "bts") == 0) {
-      bufferTemperatureSetpoint = constrain(stoi(pchv), bufferTemperatureSetpointMin, bufferTemperatureSetpointMax);
-    } else if (strcmp(pch, "btm") == 0) {
-      bufferTemperatureMaxError = constrain(stoi(pchv), bufferTemperatureMaxErrorMin, bufferTemperatureMaxErrorMax);
-    } else if (strcmp(pch, "lb") == 0) {
-      lcdBacklight = stob(pchv);
-      if (lcdBacklight)
+    } else if (strcmp(pch, paramOpDisplayUpdateInterval) == 0) {
+      displayUpdateInterval = constrain(stoi(pchv), 1, maxIntervalUpdate);
+    } else if (strcmp(pch, paramOpDisplayBacklight) == 0) {
+      displayBacklight = stob(pchv);
+      if (displayBacklight)
         display.backlight();
       else
         display.noBacklight();
+    } else if (strcmp(pch, paramOpBufferTemperatureUpdateInterval) == 0) {
+      bufferTemperatureUpdateInterval = constrain(stoi(pchv), 1, maxIntervalUpdate);
+    } else if (strcmp(pch, paramOpBufferTemperatureAutomaticControl) == 0) {
+      bufferTemperatureAutomaticControl = stob(pchv);
+    } else if (strcmp(pch, paramOpBufferTemperatureSetpoint) == 0) {
+      bufferTemperatureSetpoint = constrain(stoi(pchv), bufferTemperatureSetpointMin, bufferTemperatureSetpointMax);
+    } else if (strcmp(pch, paramOpBufferTemperatureMaxError) == 0) {
+      bufferTemperatureMaxError = constrain(stoi(pchv), bufferTemperatureMaxErrorMin, bufferTemperatureMaxErrorMax);
+    } else if (strcmp(pch, paramOpServoSpeed) == 0) {
+      servoSpeed = constrain(stoi(pchv), 0, 255);
     }
     pch = strtok(NULL, "@=");
   }
@@ -281,12 +304,12 @@ void centerMotor() {
 void moveMotor(int finalAngle) {
   servo.attach(servoPin);
   delay(15);
-  servo.write(map(finalAngle, 0, 180, servoUsFrom, servoUsTo), servoVelocity, waitForMotorMove);
+  servo.write(map(finalAngle, 0, 180, servoUsFrom, servoUsTo), servoSpeed, waitForMotorMove);
   servo.detach();
 }
 
 void loopDisplay() {
-  if (displayActive && (!displayTimer.isRunning() || displayTimer.hasPassed(displayUpdateInfoInterval))) {
+  if (displayActive && (!displayTimer.isRunning() || displayTimer.hasPassed(displayUpdateInterval))) {
     displayTimer.restart();
     if (autoEnd) {
       if (lastDisplayState == 1) return;
@@ -533,26 +556,27 @@ void serialDebugWrite(String outputtext) {
 }
 
 void encodeCurrent() {
-  sprintf(inOutData, "o=%c@p=%c@r=%c@a=%d@w=%d@rs=%d@re=%d@rd=%d@aw=%d@bt=%d@hr=%lu@ae=%c@da=%c@dui=%d@bui=%d@btac=%c@bts=%d@btm=%d@lb=%c",
-          btos(onoff),
-          btos(pause),
-          btos(ramp),
-          angle,
-          wop,
-          rampStart,
-          rampEnd,
-          rampDuration,
-          wopAuto, // from here, just output
-          bufferTemperature,
-          runTimer.elapsed(),
-          btos(autoEnd), // end just output
-          btos(displayActive), // from here, deep config
-          displayUpdateInfoInterval,
-          bufferTemperatureUpdateInterval, // end deep config
-          btos(bufferTemperatureAutomaticControl),
-          bufferTemperatureSetpoint,
-          bufferTemperatureMaxError,
-          btos(lcdBacklight)
+  sprintf(inOutData, "%s=%c@%s=%c@%s=%c@%s=%d@%s=%d@%s=%d@%s=%d@%s=%d@%s=%d@%s=%d@%s=%lu@%s=%c@%s=%c@%s=%d@%s=%d@%s=%c@%s=%d@%s=%d@%s=%c@%s=%d",
+          paramOpOnOff, btos(onoff),
+          paramOpPause, btos(pause),
+          paramOpRamp, btos(ramp),
+          paramOpAngle, angle,
+          paramOpWop, wop,
+          paramOpRampStart, rampStart,
+          paramOpRampEnd, rampEnd,
+          paramOpRampDuration, rampDuration,
+          paramOpAutoWop, wopAuto,
+          paramOpBufferTemperature, bufferTemperature,
+          paramOpHasRun, runTimer.elapsed(),
+          paramOpAutoEnd, btos(autoEnd),
+          paramOpDisplayActive, btos(displayActive),
+          paramOpDisplayUpdateInterval, displayUpdateInterval,
+          paramOpBufferTemperatureUpdateInterval, bufferTemperatureUpdateInterval,
+          paramOpBufferTemperatureAutomaticControl, btos(bufferTemperatureAutomaticControl),
+          paramOpBufferTemperatureSetpoint, bufferTemperatureSetpoint,
+          paramOpBufferTemperatureMaxError, bufferTemperatureMaxError,
+          paramOpDisplayBacklight, btos(displayBacklight),
+          paramOpServoSpeed, servoSpeed
          );
 }
 

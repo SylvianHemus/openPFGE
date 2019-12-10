@@ -397,6 +397,35 @@
             android:layout_height="2dp"
             android:background="@color/colorSectionSeparator" />
 
+        <LinearLayout
+            android:id="@+id/wrapServoSpeed"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            >
+
+            <TextView
+                android:id="@+id/textView18"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="2"
+                android:text="Servo Speed [0 = full, 1-255]"
+                android:textColor="@android:color/background_dark"
+                android:tooltipText="0=full speed, 1-255 slower to faster" />
+
+            <EditText
+                android:id="@+id/editTextServoSpeed"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:ems="10"
+                android:inputType="number"
+                android:textAlignment="center"
+                />
+
+        </LinearLayout>
+
         <Switch
             android:id="@+id/switchDisplayActive"
             android:layout_width="match_parent"
