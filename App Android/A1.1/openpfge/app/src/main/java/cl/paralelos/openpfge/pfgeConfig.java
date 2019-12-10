@@ -719,7 +719,7 @@ public class pfgeConfig extends AppCompatActivity implements ItemPickerDialogFra
         // defaults
         programs.add(new Program(
                 "MidRange PFG Marker",
-                "o=f@p=f@r=t@a=120@w=3@rs=1@re=25@rd=24@da=t@dui=3@bui=10@btac=t@bts=14@btm=3",
+                paramOpOnOff+"=f@"+paramOpPause+"=f@"+paramOpRamp+"=t@"+paramOpAngle+"=120@"+paramOpRampStart+"=1@"+paramOpRampEnd+"=25@"+paramOpRampDuration+"=24@"+paramOpBufferTemperatureAutomaticControl+"=t@"+paramOpBufferTemperatureSetpoint+"=14",
                 "NEB",
                 "N0342S",
                 "15–291 kb",
@@ -729,7 +729,7 @@ public class pfgeConfig extends AppCompatActivity implements ItemPickerDialogFra
         ));
         programs.add(new Program(
                 "CHEF DNA Size Marker",
-                "o=f@p=f@r=t@a=120@w=3@rs=26@re=228@rd=26@da=t@dui=3@bui=10@btac=t@bts=14@btm=3",
+                paramOpOnOff+"=f@"+paramOpPause+"=f@"+paramOpRamp+"=t@"+paramOpAngle+"=120@"+paramOpRampStart+"=26@"+paramOpRampEnd+"=228@"+paramOpRampDuration+"=26@"+paramOpBufferTemperatureAutomaticControl+"=t@"+paramOpBufferTemperatureSetpoint+"=14",
                 "BIO-RAD",
                 "1703605",
                 "0.225–2.2 Mb",
