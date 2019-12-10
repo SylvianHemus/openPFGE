@@ -106,6 +106,8 @@ Source code available at *App Android* folder.
 - Documentation license: CC BY 4.0 International
 
 # Thanks to
+## 3D printing
+[Fablab U. de Chile](http://fablab.uchile.cl/)
 ## app
 Item picker [link](https://gist.github.com/kristopherjohnson/660656bb9e18e23146c0)
 ## firmware
