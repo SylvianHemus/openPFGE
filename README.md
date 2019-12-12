@@ -105,14 +105,18 @@ Source code available at *App Android* folder.
 - Software license: GPL v3
 - Documentation license: CC BY 4.0 International
 
+# Open hardware certification
+
+[OSHW] CL000001 | Certified open source hardware | [oshwa.org/cert](oshwa.org/cert)
+
 # Thanks to
 ## 3D printing
 [Fablab U. de Chile](http://fablab.uchile.cl/)
-## app
+## App
 Item picker [link](https://gist.github.com/kristopherjohnson/660656bb9e18e23146c0)
-## firmware
+## Firmware
 Thermistor code [link](https://learn.adafruit.com/thermistor/using-a-thermistor)
-## logo
+## Logo
 Based on logo by [link](https://www.instagram.com/rubenferlodotcom/)
 
 # Contact
