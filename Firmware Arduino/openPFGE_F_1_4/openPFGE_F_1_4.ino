@@ -15,12 +15,13 @@
 #include <VarSpeedServo.h>
 #include <Wire.h>
 #include <LiquidCrystal_I2C.h>
+#include <ArduinoJson.h>
 
 // firmware
-#define firmwareVersion 2
+#define firmwareVersion 3
 
 // debug
-#define serialDebug false // should the program outputs the debug by serial port
+#define serialDebug true // should the program outputs the debug by serial port
 bool serialStarted = false; // serial started?
 
 // motor servo
@@ -74,38 +75,44 @@ int rampEnd = 25; // final time movement in ramp on mode (seconds)
 int rampDuration = 24; // ramp time in ramp on mode (hours)
 
 // variables
-char inOutData[100]; // serial inputs & outpus
 bool autoEnd = false; // whether the program has automaticlly ended
 #define maxIntervalUpdate 60 // 60 seconds for maximum update interval
 int bufferTemperatureUpdateInterval = 10; // buffer temperature update interval (seconds)
-char methodSync = 'y';
-char methodSet = 's';
-char methodWho = 'w';
-char methodAutomaticEnd = 'a';
-char methodUnknown = 'u';
-char methodCommunicationError = 'c';
+const int jsonCapacity =  20 * JSON_OBJECT_SIZE(1); // json document capacity
+StaticJsonDocument<jsonCapacity> jsonDoc; // Allocate the JsonDocument
+JsonObject jsonObj; // json object
+DeserializationError jsonErr;
 
 // parameter options
-#define paramOpOnOff "0"
-#define paramOpPause "1"
-#define paramOpRamp "2"
-#define paramOpAngle "3"
-#define paramOpWop "4"
-#define paramOpAutoWop "5"
-#define paramOpHasRun "6"
-#define paramOpAutoEnd "7"
-#define paramOpRampStart "8"
-#define paramOpRampEnd "9"
-#define paramOpRampDuration "10"
-#define paramOpDisplayActive "11"
-#define paramOpDisplayUpdateInterval "12"
-#define paramOpBufferTemperature "13"
-#define paramOpBufferTemperatureUpdateInterval "14"
-#define paramOpBufferTemperatureAutomaticControl "15"
-#define paramOpBufferTemperatureSetpoint "16"
-#define paramOpBufferTemperatureMaxError "17"
-#define paramOpDisplayBacklight "18"
-#define paramOpServoSpeed "19"
+#define methodParam "m"
+#define methodSync "sy"
+#define methodSet "se"
+#define methodWho "wh"
+#define methodAutomaticEnd "ae"
+#define methodUnknown "uk"
+#define methodCommunicationError "ce"
+
+#define paramOpOnOff "o"
+#define paramOpPause "p"
+#define paramOpRamp "r"
+#define paramOpAngle "a"
+#define paramOpWop "w"
+#define paramOpAutoWop "aw"
+#define paramOpHasRun "hr"
+#define paramOpAutoEnd "ae"
+#define paramOpRampStart "rs"
+#define paramOpRampEnd "re"
+#define paramOpRampDuration "rd"
+#define paramOpDisplayActive "da"
+#define paramOpDisplayUpdateInterval "du"
+#define paramOpDisplayBacklight "db"
+#define paramOpBufferTemperature "bt"
+#define paramOpBufferTemperatureUpdateInterval "bu"
+#define paramOpBufferTemperatureAutomaticControl "bc"
+#define paramOpBufferTemperatureSetpoint "bs"
+#define paramOpBufferTemperatureMaxError "be"
+#define paramOpServoSpeed "ss"
+#define paramFirmwareVersion "fv"
 
 // timers
 Chrono runTimer(Chrono::SECONDS); // running timer
@@ -165,98 +172,95 @@ void loop() {
 void loopSerial() {
   if (BT.available())
   {
-    requestBtData();
-
-    char * pch;
-    char * method;
-    char * inOutDataForProcess = (char *)malloc(strlen(inOutData) + 1);
-    strcpy(inOutDataForProcess, inOutData);
-    pch = strtok(inOutDataForProcess, "@=");
-
-    while (pch != NULL)
-    {
-      method = strtok(NULL, "@=");
-      if (strcmp(pch, "m") == 0) {
-        break;
+    if (requestBtData()) {
+      if (jsonObj[methodParam] == methodWho) {
+        jsonDoc.clear();
+        jsonDoc[methodParam] = methodWho;
+        jsonDoc[paramFirmwareVersion] = firmwareVersion;
+        btSendMessage();
+      } else if (jsonObj[methodParam] == methodSync) {
+        encodeCurrent();
+        jsonDoc[methodParam] = methodSync;
+        btSendMessage();
+        displayParamSent();
+      } else if (jsonObj[methodParam] == methodAutomaticEnd) {
+        jsonDoc.clear();
+        jsonDoc[methodParam] = methodAutomaticEnd;
+        btSendMessage();
+      } else if (jsonObj[methodParam] == methodSet) {
+        setParams();
+        encodeCurrent();
+        jsonDoc[methodParam] = methodSet;
+        btSendMessage();
+      } else if (jsonObj[methodParam] == methodCommunicationError) {
+        displayCommError();
+      } else {
+        jsonDoc.clear();
+        jsonDoc[methodParam] = methodUnknown;
+        btSendMessage();
       }
-      pch = strtok(NULL, "@=");
-    }
-
-    if (method[0] == methodWho) {
-      sprintf(inOutData, "m=%c@fv=%d", methodWho, firmwareVersion);
-      btSendMessage(inOutData);
-    } else if (method[0] == methodSync) {
-      encodeCurrent();
-      sprintf(inOutData + strlen(inOutData), "@m=%c", methodSync);
-      btSendMessage(inOutData);
-      displayParamSent();
-    } else if (method[0] == methodAutomaticEnd) {
-      sprintf(inOutData, "m=%c", methodAutomaticEnd);
-      btSendMessage(inOutData);
-    } else if (method[0] == methodSet) {
-      setParams();
-      encodeCurrent();
-      sprintf(inOutData + strlen(inOutData), "@m=%c", methodSet);
-      btSendMessage(inOutData);
-    } else if (method[0] == methodCommunicationError) {
-      displayCommError();
-    } else {
-      sprintf(inOutData, "m=%c", methodUnknown);
-      btSendMessage(inOutData);
     }
   }
 }
 
 void setParams() {
-  char * pch;
-  char * pchv;
-  pch = strtok(inOutData, "@=");
-
-  while (pch != NULL)
-  {
-    pchv = strtok(NULL, "@=");
-    if (strcmp(pch, paramOpOnOff) == 0) {
-      setOnOff(stob(pchv));
-    } else if (strcmp(pch, paramOpPause) == 0) {
-      setPause(stob(pchv));
-    } else if (strcmp(pch, paramOpRamp) == 0) {
-      setRamp(stob(pchv));
-    } else if (strcmp(pch, paramOpAngle) == 0) {
-      angle = constrain(stoi(pchv), 1, 180);
-    } else if (strcmp(pch, paramOpWop) == 0) {
-      wop = constrain(stoi(pchv), 1, maxWop);
-    } else if (strcmp(pch, paramOpRampStart) == 0) {
-      rampStart = constrain(stoi(pchv), 1, rampEnd - 1);
-    } else if (strcmp(pch, paramOpRampEnd) == 0) {
-      rampEnd = constrain(stoi(pchv), rampStart + 1, maxWop);
-    } else if (strcmp(pch, paramOpRampDuration) == 0) {
-      rampDuration = constrain(stoi(pchv), 1, maxRampDuration);
-    } else if (strcmp(pch, paramOpAutoEnd) == 0) {
-      autoEnd = false; // set to false always if it is set
-    } else if (strcmp(pch, paramOpDisplayActive) == 0) {
-      displayActive = stob(pchv);
-      if (!displayActive)
-        display.clear();
-    } else if (strcmp(pch, paramOpDisplayUpdateInterval) == 0) {
-      displayUpdateInterval = constrain(stoi(pchv), 1, maxIntervalUpdate);
-    } else if (strcmp(pch, paramOpDisplayBacklight) == 0) {
-      displayBacklight = stob(pchv);
-      if (displayBacklight)
-        display.backlight();
-      else
-        display.noBacklight();
-    } else if (strcmp(pch, paramOpBufferTemperatureUpdateInterval) == 0) {
-      bufferTemperatureUpdateInterval = constrain(stoi(pchv), 1, maxIntervalUpdate);
-    } else if (strcmp(pch, paramOpBufferTemperatureAutomaticControl) == 0) {
-      bufferTemperatureAutomaticControl = stob(pchv);
-    } else if (strcmp(pch, paramOpBufferTemperatureSetpoint) == 0) {
-      bufferTemperatureSetpoint = constrain(stoi(pchv), bufferTemperatureSetpointMin, bufferTemperatureSetpointMax);
-    } else if (strcmp(pch, paramOpBufferTemperatureMaxError) == 0) {
-      bufferTemperatureMaxError = constrain(stoi(pchv), bufferTemperatureMaxErrorMin, bufferTemperatureMaxErrorMax);
-    } else if (strcmp(pch, paramOpServoSpeed) == 0) {
-      servoSpeed = constrain(stoi(pchv), 0, 255);
-    }
-    pch = strtok(NULL, "@=");
+  if (jsonObj.containsKey(paramOpPause)) {
+    setPause(stob(jsonObj[paramOpPause]));
+  }
+  if (jsonObj.containsKey(paramOpRamp)) {
+    setRamp(stob(jsonObj[paramOpRamp]));
+  }
+  if (jsonObj.containsKey(paramOpAngle)) {
+    angle = constrain(stoi(jsonObj[paramOpAngle]), 1, 180);
+  }
+  if (jsonObj.containsKey(paramOpWop)) {
+    wop = constrain(stoi(jsonObj[paramOpWop]), 1, maxWop);
+  }
+  if (jsonObj.containsKey(paramOpRampStart)) {
+    rampStart = constrain(stoi(jsonObj[paramOpRampStart]), 1, rampEnd - 1);
+  }
+  if (jsonObj.containsKey(paramOpRampEnd)) {
+    rampEnd = constrain(stoi(jsonObj[paramOpRampEnd]), rampStart + 1, maxWop);
+  }
+  if (jsonObj.containsKey(paramOpRampDuration)) {
+    rampDuration = constrain(stoi(jsonObj[paramOpRampDuration]), 1, maxRampDuration);
+  }
+  if (jsonObj.containsKey(paramOpAutoEnd)) {
+    autoEnd = false; // set to false always if it is set
+  }
+  if (jsonObj.containsKey(paramOpDisplayActive)) {
+    displayActive = stob(jsonObj[paramOpDisplayActive]);
+    if (!displayActive)
+      display.clear();
+  }
+  if (jsonObj.containsKey(paramOpDisplayUpdateInterval)) {
+    displayUpdateInterval = constrain(stoi(jsonObj[paramOpDisplayUpdateInterval]), 1, maxIntervalUpdate);
+  }
+  if (jsonObj.containsKey(paramOpDisplayBacklight)) {
+    displayBacklight = stob(jsonObj[paramOpDisplayBacklight]);
+    if (displayBacklight)
+      display.backlight();
+    else
+      display.noBacklight();
+  }
+  if (jsonObj.containsKey(paramOpBufferTemperatureUpdateInterval)) {
+    bufferTemperatureUpdateInterval = constrain(stoi(jsonObj[paramOpBufferTemperatureUpdateInterval]), 1, maxIntervalUpdate);
+  }
+  if (jsonObj.containsKey(paramOpBufferTemperatureAutomaticControl)) {
+    bufferTemperatureAutomaticControl = stob(jsonObj[paramOpBufferTemperatureAutomaticControl]);
+  }
+  if (jsonObj.containsKey(paramOpBufferTemperatureSetpoint)) {
+    bufferTemperatureSetpoint = constrain(stoi(jsonObj[paramOpBufferTemperatureSetpoint]), bufferTemperatureSetpointMin, bufferTemperatureSetpointMax);
+  }
+  if (jsonObj.containsKey(paramOpBufferTemperatureMaxError)) {
+    bufferTemperatureMaxError = constrain(stoi(jsonObj[paramOpBufferTemperatureMaxError]), bufferTemperatureMaxErrorMin, bufferTemperatureMaxErrorMax);
+  }
+  if (jsonObj.containsKey(paramOpServoSpeed)) {
+    servoSpeed = constrain(stoi(jsonObj[paramOpServoSpeed]), 0, 255);
+  }
+  // on/off at the end
+  if (jsonObj.containsKey(paramOpOnOff)) {
+    setOnOff(stob(jsonObj[paramOpOnOff]));
   }
   displayParamUpdated();
 }
@@ -535,12 +539,50 @@ void setRamp(bool newRamp) {
   ramp = newRamp;
 }
 
-void requestBtData() {
+void encodeCurrent() {
+  jsonDoc.clear();
+  jsonDoc[paramOpOnOff] = btos(onoff);
+  jsonDoc[paramOpPause] = btos(pause);
+  jsonDoc[paramOpRamp] = btos(ramp);
+  jsonDoc[paramOpAngle] = angle;
+  jsonDoc[paramOpWop] = wop;
+  jsonDoc[paramOpRampStart] = rampStart;
+  jsonDoc[paramOpRampEnd] = rampEnd;
+  jsonDoc[paramOpRampDuration] = rampDuration;
+  jsonDoc[paramOpAutoWop] = wopAuto;
+  jsonDoc[paramOpBufferTemperature] = bufferTemperature;
+  jsonDoc[paramOpHasRun] = runTimer.elapsed();
+  jsonDoc[paramOpAutoEnd] = btos(autoEnd);
+  jsonDoc[paramOpDisplayActive] = btos(displayActive);
+  jsonDoc[paramOpDisplayUpdateInterval] = displayUpdateInterval;
+  jsonDoc[paramOpBufferTemperatureUpdateInterval] = bufferTemperatureUpdateInterval;
+  jsonDoc[paramOpBufferTemperatureAutomaticControl] = btos(bufferTemperatureAutomaticControl);
+  jsonDoc[paramOpBufferTemperatureSetpoint] = bufferTemperatureSetpoint;
+  jsonDoc[paramOpBufferTemperatureMaxError] = bufferTemperatureMaxError;
+  jsonDoc[paramOpDisplayBacklight] = btos(displayBacklight);
+  jsonDoc[paramOpServoSpeed] = servoSpeed;
+}
+
+void btSendMessage() {
+  serializeJson(jsonDoc, BT);
+  BT.println();
+  /*Serial.println("sending");
+  serializeJson(jsonDoc, Serial);
+  Serial.println("");*/
+}
+
+bool requestBtData() {
   if (BT.available()) {
-    strcpy(inOutData, BT.readString().c_str());
-    return;
+    jsonErr = deserializeJson(jsonDoc, BT);
+    if (!jsonErr) {
+      jsonObj = jsonDoc.as<JsonObject>();
+/*  Serial.println("recibiendo");
+      serializeJson(jsonDoc, Serial);
+  Serial.println("");*/
+      return true;
+    }
   }
-  sprintf(inOutData, "");
+  return false;
 }
 
 void serialDebugWrite(String outputtext) {
@@ -555,35 +597,6 @@ void serialDebugWrite(String outputtext) {
   }
 }
 
-void encodeCurrent() {
-  sprintf(inOutData, "%s=%c@%s=%c@%s=%c@%s=%d@%s=%d@%s=%d@%s=%d@%s=%d@%s=%d@%s=%d@%s=%lu@%s=%c@%s=%c@%s=%d@%s=%d@%s=%c@%s=%d@%s=%d@%s=%c@%s=%d",
-          paramOpOnOff, btos(onoff),
-          paramOpPause, btos(pause),
-          paramOpRamp, btos(ramp),
-          paramOpAngle, angle,
-          paramOpWop, wop,
-          paramOpRampStart, rampStart,
-          paramOpRampEnd, rampEnd,
-          paramOpRampDuration, rampDuration,
-          paramOpAutoWop, wopAuto,
-          paramOpBufferTemperature, bufferTemperature,
-          paramOpHasRun, runTimer.elapsed(),
-          paramOpAutoEnd, btos(autoEnd),
-          paramOpDisplayActive, btos(displayActive),
-          paramOpDisplayUpdateInterval, displayUpdateInterval,
-          paramOpBufferTemperatureUpdateInterval, bufferTemperatureUpdateInterval,
-          paramOpBufferTemperatureAutomaticControl, btos(bufferTemperatureAutomaticControl),
-          paramOpBufferTemperatureSetpoint, bufferTemperatureSetpoint,
-          paramOpBufferTemperatureMaxError, bufferTemperatureMaxError,
-          paramOpDisplayBacklight, btos(displayBacklight),
-          paramOpServoSpeed, servoSpeed
-         );
-}
-
-void btSendMessage(char * message) {
-  BT.println(message);
-}
-
 int stoi(char * convert) {
   return atoi(convert);
 }
@@ -592,8 +605,8 @@ bool stob(char * convert) {
   return strcmp(convert, "t") == 0 ? true : false;
 }
 
-char btos(bool convert) {
-  return convert ? 't' : 'f';
+String btos(bool convert) {
+  return convert ? "t" : "f";
 }
 
 char * secondsToTime(unsigned long t)

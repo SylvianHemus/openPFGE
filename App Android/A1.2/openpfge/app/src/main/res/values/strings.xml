@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">openPFGE</string>
+    <string name="app_version">2</string>
+    <string name="app_firmware_min_firmware_version_supported">2</string>
+</resources>

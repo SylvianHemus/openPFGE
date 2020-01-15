@@ -116,6 +116,7 @@ Source code available at *App Android* folder.
 Item picker [link](https://gist.github.com/kristopherjohnson/660656bb9e18e23146c0)
 ## Firmware
 Thermistor code [link](https://learn.adafruit.com/thermistor/using-a-thermistor)
+ArduinoJson [link](https://arduinojson.org/)
 ## Logo
 Based on logo by [link](https://www.instagram.com/rubenferlodotcom/)
 

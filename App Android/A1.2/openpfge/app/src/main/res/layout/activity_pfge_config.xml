@@ -1,0 +1,569 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/colorBackgroundFullScreenLayout"
+    tools:context=".pfgeConfig">
+
+    <androidx.coordinatorlayout.widget.CoordinatorLayout
+        android:id="@+id/main_content"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:isScrollContainer="true"
+        android:orientation="vertical"
+        android:padding="24dp">
+
+        <TextView
+            android:id="@+id/textView"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingBottom="8dp"
+            android:text="Main Config"
+            android:textColor="@color/colorSectionTitle"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="2dp"
+            android:background="@color/colorSectionSeparator" />
+
+        <Switch
+            android:id="@+id/switchRunning"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingTop="8dp"
+            android:paddingBottom="8dp"
+            android:text="Running"
+            android:tooltipText="Switch On/Off" />
+
+        <Switch
+            android:id="@+id/switchPause"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+
+            android:paddingTop="8dp"
+            android:paddingBottom="8dp"
+            android:showText="false"
+            android:text="Pause"
+            android:tooltipText="Pause On/Off" />
+
+        <Switch
+            android:id="@+id/switchRamp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+
+            android:paddingTop="8dp"
+            android:paddingBottom="8dp"
+            android:showText="false"
+            android:text="Ramp"
+            android:tooltipText="Ramp On/Off" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            >
+
+            <TextView
+                android:id="@+id/textView3"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="2"
+                android:text="Angle [°]"
+                android:textColor="@android:color/background_dark"
+                android:tooltipText="Rotation angle" />
+
+            <EditText
+                android:id="@+id/editTextAngle"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:ems="10"
+                android:inputType="number"
+                android:textAlignment="center" />
+
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/wrapWop"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            >
+
+            <TextView
+                android:id="@+id/textView4"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="2"
+                android:text="WOP [s]"
+                android:textColor="@android:color/background_dark"
+                android:tooltipText="Wait on position time" />
+
+            <EditText
+                android:id="@+id/editTextWop"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:ems="10"
+                android:inputType="number"
+                android:textAlignment="center" />
+
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/wrapRampStart"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            >
+
+            <TextView
+                android:id="@+id/textView7"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="2"
+                android:text="Ramp Start [s]"
+                android:textColor="@android:color/background_dark"
+                android:tooltipText="Wait on position start time" />
+
+            <EditText
+                android:id="@+id/editTextRampStart"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:ems="10"
+                android:inputType="number"
+                android:textAlignment="center" />
+
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/wrapRampEnd"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            >
+
+            <TextView
+                android:id="@+id/textView8"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="2"
+                android:text="Ramp End [s]"
+                android:textColor="@android:color/background_dark"
+                android:tooltipText="Wait on position end time" />
+
+            <EditText
+                android:id="@+id/editTextRampEnd"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:ems="10"
+                android:inputType="number"
+                android:textAlignment="center" />
+
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/wrapRampDuration"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            >
+
+            <TextView
+                android:id="@+id/textView9"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="2"
+                android:text="Ramp Duration [h]"
+                android:textColor="@android:color/background_dark"
+                android:tooltipText="Ramp duration time" />
+
+            <EditText
+                android:id="@+id/editTextRampDuration"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:ems="10"
+                android:inputType="number"
+                android:textAlignment="center" />
+
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/wrapAutoWop"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingTop="8dp"
+            android:paddingBottom="8dp">
+
+            <TextView
+                android:id="@+id/textView12"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="2"
+                android:text="Current WOP [s]"
+                android:textColor="@android:color/background_dark"
+                android:tooltipText="Current wait on position time" />
+
+            <TextView
+                android:id="@+id/textViewAutoWop"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="-"
+                android:textAlignment="center"
+                android:textColor="@android:color/background_dark"
+                android:textSize="18sp" />
+
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingTop="8dp"
+            android:paddingBottom="8dp">
+
+            <TextView
+                android:id="@+id/textView11"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="2"
+                android:text="Has run [hh:mm:ss]"
+                android:textColor="@android:color/background_dark"
+                android:tooltipText="Total run time" />
+
+            <TextView
+                android:id="@+id/textViewHasRun"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="-"
+                android:textAlignment="center"
+                android:textColor="@android:color/background_dark"
+                android:textSize="18sp" />
+
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/textView1"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingTop="16dp"
+            android:paddingBottom="8dp"
+            android:text="Temperature control"
+            android:textColor="@color/colorSectionTitle"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="2dp"
+            android:background="@color/colorSectionSeparator" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingTop="8dp"
+            android:paddingBottom="8dp">
+
+            <TextView
+                android:id="@+id/textView10"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="2"
+                android:text="Buffer temperature [°C]"
+                android:textColor="@android:color/background_dark"
+                android:tooltipText="Current buffer temperature" />
+
+            <TextView
+                android:id="@+id/textViewBufferTemperature"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="-"
+                android:textAlignment="center"
+                android:textColor="@android:color/background_dark"
+                android:textSize="18sp" />
+
+        </LinearLayout>
+
+        <Switch
+            android:id="@+id/switchBufferTemperatureAutomaticControl"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+
+            android:paddingTop="8dp"
+            android:paddingBottom="8dp"
+            android:showText="false"
+            android:text="Buffer temperature automatic control"
+            android:tooltipText="Buffer temperature automatic control On/Off"/>
+
+
+        <LinearLayout
+            android:id="@+id/wrapBufferTemperatureUpdateSetpoint"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            >
+
+            <TextView
+                android:id="@+id/textView15"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="2"
+                android:text="Buffer temperature set point [°C]"
+                android:textColor="@android:color/background_dark"
+                android:tooltipText="Buffer temperature set point" />
+
+            <EditText
+                android:id="@+id/editTextBufferTemperatureUpdateSetpoint"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:ems="10"
+                android:inputType="number"
+                android:textAlignment="center" />
+
+        </LinearLayout>
+
+
+        <LinearLayout
+            android:id="@+id/wrapBufferTemperatureMaxError"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            >
+
+            <TextView
+                android:id="@+id/textView16"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="2"
+                android:text="Buffer temperature max error [°C]"
+                android:textColor="@android:color/background_dark"
+                android:tooltipText="Buffer temperature max error" />
+
+            <EditText
+                android:id="@+id/editTextBufferTemperatureMaxError"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:ems="10"
+                android:inputType="number"
+                android:textAlignment="center" />
+
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/textView2"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingTop="16dp"
+            android:paddingBottom="8dp"
+            android:text="Deep Config"
+            android:textColor="@color/colorSectionTitle"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="2dp"
+            android:background="@color/colorSectionSeparator" />
+
+        <LinearLayout
+            android:id="@+id/wrapServoSpeed"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            >
+
+            <TextView
+                android:id="@+id/textView18"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="2"
+                android:text="Servo Speed [0 = full, 1-255]"
+                android:textColor="@android:color/background_dark"
+                android:tooltipText="0=full speed, 1-255 slower to faster" />
+
+            <EditText
+                android:id="@+id/editTextServoSpeed"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:ems="10"
+                android:inputType="number"
+                android:textAlignment="center"
+                />
+
+        </LinearLayout>
+
+        <Switch
+            android:id="@+id/switchDisplayActive"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+
+            android:paddingTop="8dp"
+            android:paddingBottom="8dp"
+            android:text="Display Active"
+            android:tooltipText="Display On/Off" />
+
+        <Switch
+            android:id="@+id/switchDisplayBacklight"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+
+            android:paddingTop="8dp"
+            android:paddingBottom="8dp"
+            android:text="Display Backlight"
+            android:tooltipText="Display Backlight On/Off" />
+
+        <LinearLayout
+            android:id="@+id/wrapDisplayUpdateInterval"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            >
+
+            <TextView
+                android:id="@+id/textView13"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="2"
+                android:text="Display update interval [s]"
+                android:textColor="@android:color/background_dark"
+                android:tooltipText="Display info update interval" />
+
+            <EditText
+                android:id="@+id/editTextDisplayUpdateInterval"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:ems="10"
+                android:inputType="number"
+                android:textAlignment="center" />
+
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            >
+
+            <TextView
+                android:id="@+id/textView14"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="2"
+                android:text="Buffer temperature update interval [s]"
+                android:textColor="@android:color/background_dark"
+                android:tooltipText="Buffer temperature update interval" />
+
+            <EditText
+                android:id="@+id/editTextBufferTemperatureUpdateInterval"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:ems="10"
+                android:inputType="number"
+                android:textAlignment="center" />
+
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/textView17"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingTop="16dp"
+            android:paddingBottom="8dp"
+            android:text="Device"
+            android:textColor="@color/colorSectionTitle"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="2dp"
+            android:background="@color/colorSectionSeparator" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <TextView
+                android:id="@+id/textViewDeviceName"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:paddingTop="8dp"
+                android:paddingBottom="8dp"
+                android:text="Device name: unknown"
+                android:textColor="@android:color/background_dark" />
+
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <Button
+                android:id="@+id/buttonChangeDevice"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:backgroundTint="@color/colorAccent"
+                android:text="CHANGE DEVICE"
+                android:textColor="#fff" />
+
+            <Button
+                android:id="@+id/buttonDisconnectDevice"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:backgroundTint="@color/colorAccent"
+                android:text="DISCONNECT DEVICE"
+                android:textColor="#fff" />
+
+        </LinearLayout>
+
+    </LinearLayout>
+    </ScrollView>
+
+    </androidx.coordinatorlayout.widget.CoordinatorLayout>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

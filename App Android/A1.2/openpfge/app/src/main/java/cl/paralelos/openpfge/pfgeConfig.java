@@ -34,6 +34,9 @@ import com.harrysoft.androidbluetoothserial.BluetoothManager;
 import com.harrysoft.androidbluetoothserial.BluetoothSerialDevice;
 import com.harrysoft.androidbluetoothserial.SimpleBluetoothDeviceInterface;
 
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -50,6 +53,39 @@ import io.reactivex.schedulers.Schedulers;
 
 public class pfgeConfig extends AppCompatActivity implements ItemPickerDialogFragment.OnItemSelectedListener {
 
+    final int REQUEST_ENABLE_BT = 0;
+    final String settingsBluetoothAdress = "bta";
+    final String settingsBluetoothName = "btn";
+    final String methodParam = "m";
+    final String methodSync = "sy";
+    final String methodSet = "se";
+    final String methodWho = "wh";
+    final String methodAutomaticEnd = "ae";
+    final String methodUnknown = "uk";
+    final String methodCommunicationError = "ce";
+    final String paramOpOnOff = "o";
+    final String paramOpPause = "p";
+    final String paramOpRamp = "r";
+    final String paramOpAngle = "a";
+    final String paramOpWop = "w";
+    final String paramOpAutoWop = "aw";
+    final String paramOpHasRun= "hr";
+    final String paramOpAutoEnd = "ae";
+    final String paramOpRampStart = "rs";
+    final String paramOpRampEnd = "re";
+    final String paramOpRampDuration = "rd";
+    final String paramOpDisplayActive = "da";
+    final String paramOpDisplayUpdateInterval = "du";
+    final String paramOpDisplayBacklight = "db";
+    final String paramOpBufferTemperature = "bt";
+    final String paramOpBufferTemperatureUpdateInterval = "bu";
+    final String paramOpBufferTemperatureAutomaticControl = "bc";
+    final String paramOpBufferTemperatureSetpoint = "bs";
+    final String paramOpBufferTemperatureMaxError = "be";
+    final String paramOpServoSpeed = "ss";
+    final String paramFirmwareVersion = "fv";
+    final String programasStringSetName = "programas";
+    final String programasStringSetSep = "¬";
     Switch switchOnOff;
     Switch switchPause;
     Switch switchRamp;
@@ -77,54 +113,42 @@ public class pfgeConfig extends AppCompatActivity implements ItemPickerDialogFra
     TextView textViewBufferTemperature;
     TextView textViewHasRun;
     TextView textViewDeviceName;
-
+    BluetoothManager bluetoothManager;
+    BluetoothAdapter mBluetoothAdapter;
+    Map<String, String> methodName = new HashMap<String, String>();
+    Toast toast;
+    List<Program> programs = new ArrayList<Program>();
     private String bluetoothName = null;
     private String bluetoothAdress = null;
     private SimpleBluetoothDeviceInterface deviceInterface;
-    BluetoothManager bluetoothManager;
-    BluetoothAdapter mBluetoothAdapter;
     private int firmwareVersion = 0;
     private Integer minFirmwareVersionSupported;
     private SharedPreferences settings;
     private SharedPreferences.Editor settingsEditor;
+    private MenuItem menuItemSync;
+    private MenuItem menuItemSet;
+    private MenuItem menuItemSaveProgram;
+    private MenuItem menuItemLoadProgram;
+    private MenuItem menuItemDeleteProgram;
+    private final BroadcastReceiver mReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            final String action = intent.getAction();
 
-    final int REQUEST_ENABLE_BT = 0;
-    final String settingsBluetoothAdress = "bta";
-    final String settingsBluetoothName = "btn";
-
-    final String methodSync = "y";
-    final String methodSet = "s";
-    final String methodWho = "w";
-    final String methodAutomaticEnd = "a";
-    final String methodUnknown = "u";
-    final String methodCommunicationError = "c";
-
-    final String paramOpOnOff = "0";
-    final String paramOpPause = "1";
-    final String paramOpRamp = "2";
-    final String paramOpAngle = "3";
-    final String paramOpWop = "4";
-    final String paramOpAutoWop = "5";
-    final String paramOpHasRun= "6";
-    final String paramOpAutoEnd = "7";
-    final String paramOpRampStart = "8";
-    final String paramOpRampEnd = "9";
-    final String paramOpRampDuration = "10";
-    final String paramOpDisplayActive = "11";
-    final String paramOpDisplayUpdateInterval = "12";
-    final String paramOpBufferTemperature = "13";
-    final String paramOpBufferTemperatureUpdateInterval = "14";
-    final String paramOpBufferTemperatureAutomaticControl = "15";
-    final String paramOpBufferTemperatureSetpoint = "16";
-    final String paramOpBufferTemperatureMaxError = "17";
-    final String paramOpDisplayBacklight = "18";
-    final String paramOpServoSpeed = "19";
-
-    Map<String, String> methodName = new HashMap<String, String>();
-
-    final String programasStringSetName = "programas";
-    final String programasStringSetSep = "¬";
-    Toast toast;
+            if (action.equals(BluetoothAdapter.ACTION_STATE_CHANGED)) {
+                final int state = intent.getIntExtra(BluetoothAdapter.EXTRA_STATE,
+                        BluetoothAdapter.ERROR);
+                switch (state) {
+                    case BluetoothAdapter.STATE_OFF:
+                        requireTurnBtOn();
+                        break;
+                    case BluetoothAdapter.STATE_ON:
+                        connectDevice();
+                        break;
+                }
+            }
+        }
+    };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -170,37 +194,34 @@ public class pfgeConfig extends AppCompatActivity implements ItemPickerDialogFra
         }
     }
 
-    private Map<String, String> encodeParams() {
-        Map<String, String> params = new HashMap<String, String>();
-        params.put(paramOpOnOff, switchOnOff.isChecked() ? "t" : "f");
-        params.put(paramOpPause, switchPause.isChecked() ? "t" : "f");
-        params.put(paramOpRamp, switchRamp.isChecked() ? "t" : "f");
-        params.put(paramOpAngle, editTextAngle.getText().toString());
-        params.put(paramOpWop, editTextWop.getText().toString());
-        params.put(paramOpRampStart, editTextRampStart.getText().toString());
-        params.put(paramOpRampEnd, editTextRampEnd.getText().toString());
-        params.put(paramOpRampDuration, editTextRampDuration.getText().toString());
-        params.put(paramOpDisplayActive, switchDisplayActive.isChecked() ? "t" : "f");
-        params.put(paramOpDisplayUpdateInterval, editTextDisplayUpdateInterval.getText().toString());
-        params.put(paramOpDisplayBacklight, switchDisplayBacklight.isChecked() ? "t" : "f");
-        params.put(paramOpBufferTemperatureUpdateInterval, editTextBufferTemperatureUpdateInterval.getText().toString());
-        params.put(paramOpBufferTemperatureAutomaticControl, switchBufferTemperatureAutomaticControl.isChecked() ? "t" : "f");
-        params.put(paramOpBufferTemperatureSetpoint, editTextBufferTemperatureSetpoint.getText().toString());
-        params.put(paramOpBufferTemperatureMaxError, editTextBufferTemperatureMaxError.getText().toString());
-        params.put(paramOpServoSpeed, editTextServoSpeed.getText().toString());
+    private JSONObject encodeParams() {
+        JSONObject params=new JSONObject();
+        try {
+            params.put(paramOpOnOff, switchOnOff.isChecked() ? "t" : "f");
+            params.put(paramOpPause, switchPause.isChecked() ? "t" : "f");
+            params.put(paramOpRamp, switchRamp.isChecked() ? "t" : "f");
+            params.put(paramOpAngle, editTextAngle.getText().toString());
+            params.put(paramOpWop, editTextWop.getText().toString());
+            params.put(paramOpRampStart, editTextRampStart.getText().toString());
+            params.put(paramOpRampEnd, editTextRampEnd.getText().toString());
+            params.put(paramOpRampDuration, editTextRampDuration.getText().toString());
+            params.put(paramOpDisplayActive, switchDisplayActive.isChecked() ? "t" : "f");
+            params.put(paramOpDisplayUpdateInterval, editTextDisplayUpdateInterval.getText().toString());
+            params.put(paramOpDisplayBacklight, switchDisplayBacklight.isChecked() ? "t" : "f");
+            params.put(paramOpBufferTemperatureUpdateInterval, editTextBufferTemperatureUpdateInterval.getText().toString());
+            params.put(paramOpBufferTemperatureAutomaticControl, switchBufferTemperatureAutomaticControl.isChecked() ? "t" : "f");
+            params.put(paramOpBufferTemperatureSetpoint, editTextBufferTemperatureSetpoint.getText().toString());
+            params.put(paramOpBufferTemperatureMaxError, editTextBufferTemperatureMaxError.getText().toString());
+            params.put(paramOpServoSpeed, editTextServoSpeed.getText().toString());
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
         return params;
     }
 
     private String encondeParamsToString() {
-        String encondedParams = "";
-        Map<String, String> params = encodeParams();
-        for (Map.Entry<String, String> param : params.entrySet()) {
-            encondedParams += param.getKey() + "=" + param.getValue() + "@";
-        }
-        encondedParams.substring(encondedParams.length() - 1);
-        return encondedParams;
+        return encodeParams().toString();
     }
-
 
     private void requestMethodSet() {
         requestMethodWithParams(methodSet, encodeParams());
@@ -215,19 +236,20 @@ public class pfgeConfig extends AppCompatActivity implements ItemPickerDialogFra
     }
 
     private void requestMethod(String method) {
-        requestMethodWithParams(method, null);
+        requestMethodWithParams(method, new JSONObject());
     }
 
-    private void requestMethodWithParams(String method, Map<String, String> params) {
-        String finalRequest = "m=" + method;
-        if (params != null) {
-            for (Map.Entry<String, String> entry : params.entrySet()) {
-                finalRequest += "@" + entry.getKey() + "=" + entry.getValue();
-            }
+    private void requestMethodWithParams(String method, JSONObject params) {
+        try {
+            params.put(methodParam, method);
+            deviceInterface.sendMessage(params.toString());
+            showFlashMessage("Requesting " + methodName.get(method) + " method");
+        } catch (JSONException e) {
+            e.printStackTrace();
         }
-        deviceInterface.sendMessage(finalRequest);
-        showFlashMessage("Requesting " + methodName.get(method) + " method");
     }
+
+    // UI
 
     private void connectDevice() {
         if (bluetoothAdress == null) {
@@ -283,22 +305,18 @@ public class pfgeConfig extends AppCompatActivity implements ItemPickerDialogFra
 
     private void onMessageReceived(String message) {
         // We received a message! Handle it here.
-        Map<String, String> response = new HashMap<String, String>();
-        for (String value : message.split("@")) {
-            String param1 = value.split("=")[0];
-            String param2 = value.split("=")[1];
-            response.put(param1, param2);
-        }
-        if (response.get("m") == null) {
+        try {
+            JSONObject response = new JSONObject(message);
+        if (!response.has(methodParam)) {
             showFlashMessage("Bad response from device");
             return;
         }
-        if (response.get("m").compareTo(methodWho) == 0) {
-            if (response.get("fv") == null) {
+        if (response.getString(methodParam).compareTo(methodWho)==0) {
+            if (response.getString(paramFirmwareVersion) == null) {
                 showFlashMessage("Device not recognized");
                 return;
             }
-            firmwareVersion = Integer.parseInt(response.get("fv"));
+            firmwareVersion = Integer.parseInt(response.getString(paramFirmwareVersion));
             if (firmwareVersion < minFirmwareVersionSupported) {
                 showFlashMessage("Firmware version not supported\nPlease choose another device");
                 selectBluetoothDevice();
@@ -316,119 +334,125 @@ public class pfgeConfig extends AppCompatActivity implements ItemPickerDialogFra
             selectBluetoothDevice();
             return;
         }
-        if (response.get("m").compareTo(methodSet) == 0) {
+        if (response.getString(methodParam).compareTo(methodSet)==0) {
             setMainView();
             processResponse(response);
             showFlashMessage("SET & SYNC done at " + getCurrentDate(null));
             return;
         }
-        if (response.get("m").compareTo(methodSync) == 0) {
+        if (response.getString(methodParam).compareTo(methodSync)==0) {
             setMainView();
             processResponse(response);
             showFlashMessage("SYNC done at " + getCurrentDate(null));
             return;
         }
-        if (response.get("m").compareTo(methodAutomaticEnd) == 0) {
+        if (response.getString(methodParam).compareTo(methodAutomaticEnd)==0) {
             processResponse(response);
             return;
         }
-        if (response.get("m").compareTo(methodUnknown) == 0) {
+        if (response.getString(methodParam).compareTo(methodUnknown)==0) {
             showFlashMessage("Unkown method requested");
             return;
         }
-        if (response.get("m").compareTo(methodCommunicationError) == 0) {
+        if (response.getString(methodParam).compareTo(methodCommunicationError)==0) {
             showFlashMessage("Communication error");
             return;
         }
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
     }
 
-    private void processResponse(Map<String, String> response) {
-        for (Map.Entry<String, String> entry : response.entrySet()) {
-            switch (entry.getKey()) {
-                case paramOpOnOff:
-                    switchOnOff.setChecked("t".equals(entry.getValue()));
-                    break;
-                case paramOpPause:
-                    switchPause.setChecked("t".equals(entry.getValue()));
-                    break;
-                case paramOpRamp:
-                    switchRamp.setChecked("t".equals(entry.getValue()));
-                    break;
-                case paramOpAngle:
-                    editTextAngle.setText(entry.getValue());
-                    break;
-                case paramOpWop:
-                    editTextWop.setText(entry.getValue());
-                    break;
-                case paramOpRampStart:
-                    editTextRampStart.setText(entry.getValue());
-                    break;
-                case paramOpRampEnd:
-                    editTextRampEnd.setText(entry.getValue());
-                    break;
-                case paramOpRampDuration:
-                    editTextRampDuration.setText(entry.getValue());
-                    break;
-                case paramOpAutoWop:
-                    textViewAutoWop.setText(entry.getValue());
-                    break;
-                case paramOpBufferTemperature:
-                    textViewBufferTemperature.setText(entry.getValue());
-                    break;
-                case paramOpHasRun:
-                    long seconds = Integer.parseInt(entry.getValue());
-                    String hms = String.format("%02d:%02d:%02d", TimeUnit.SECONDS.toHours(seconds),
-                            TimeUnit.SECONDS.toMinutes(seconds) - TimeUnit.HOURS.toMinutes(TimeUnit.SECONDS.toHours(seconds)),
-                            TimeUnit.SECONDS.toSeconds(seconds) - TimeUnit.MINUTES.toSeconds(TimeUnit.SECONDS.toMinutes(seconds)));
-                    textViewHasRun.setText(hms);
-                    break;
-                case paramOpAutoEnd:
-                    if ("t".equals(entry.getValue())) {
-                        setContentView(R.layout.activity_automatic_end);
-                        LinearLayout linearLayoutTapToContinue = (LinearLayout) findViewById(R.id.linearLayoutTapToContinue);
-                        linearLayoutTapToContinue.setOnClickListener(new View.OnClickListener() {
-                            public void onClick(View v) {
-                                requestMethod(methodAutomaticEnd); // reset automatic end
-                            }
-                        });
-                    }
-                    break;
-                case paramOpDisplayActive:
-                    switchDisplayActive.setChecked("t".equals(entry.getValue()));
-                    break;
-                case paramOpDisplayBacklight:
-                    switchDisplayBacklight.setChecked("t".equals(entry.getValue()));
-                    break;
-                case paramOpDisplayUpdateInterval:
-                    editTextDisplayUpdateInterval.setText(entry.getValue());
-                    break;
-                case paramOpBufferTemperatureUpdateInterval:
-                    editTextBufferTemperatureUpdateInterval.setText(entry.getValue());
-                    break;
-                case paramOpBufferTemperatureAutomaticControl:
-                    switchBufferTemperatureAutomaticControl.setChecked("t".equals(entry.getValue()));
-                    break;
-                case paramOpBufferTemperatureSetpoint:
-                    editTextBufferTemperatureSetpoint.setText(entry.getValue());
-                    break;
-                case paramOpBufferTemperatureMaxError:
-                    editTextBufferTemperatureMaxError.setText(entry.getValue());
-                    break;
-                case paramOpServoSpeed:
-                    editTextServoSpeed.setText(entry.getValue());
-                    break;
-                default:
-                    break;
+    private void processResponse(JSONObject response) {
+        response.keys().forEachRemaining(key -> {
+            try {
+                String value = response.getString(key);
+                switch (key) {
+                    case paramOpOnOff:
+                        switchOnOff.setChecked("t".equals(value));
+                        break;
+                    case paramOpPause:
+                        switchPause.setChecked("t".equals(value));
+                        break;
+                    case paramOpRamp:
+                        switchRamp.setChecked("t".equals(value));
+                        break;
+                    case paramOpAngle:
+                        editTextAngle.setText(value);
+                        break;
+                    case paramOpWop:
+                        editTextWop.setText(value);
+                        break;
+                    case paramOpRampStart:
+                        editTextRampStart.setText(value);
+                        break;
+                    case paramOpRampEnd:
+                        editTextRampEnd.setText(value);
+                        break;
+                    case paramOpRampDuration:
+                        editTextRampDuration.setText(value);
+                        break;
+                    case paramOpAutoWop:
+                        textViewAutoWop.setText(value);
+                        break;
+                    case paramOpBufferTemperature:
+                        textViewBufferTemperature.setText(value);
+                        break;
+                    case paramOpHasRun:
+                        long seconds = Integer.parseInt(value);
+                        String hms = String.format("%02d:%02d:%02d", TimeUnit.SECONDS.toHours(seconds),
+                                TimeUnit.SECONDS.toMinutes(seconds) - TimeUnit.HOURS.toMinutes(TimeUnit.SECONDS.toHours(seconds)),
+                                TimeUnit.SECONDS.toSeconds(seconds) - TimeUnit.MINUTES.toSeconds(TimeUnit.SECONDS.toMinutes(seconds)));
+                        textViewHasRun.setText(hms);
+                        break;
+                    case paramOpAutoEnd:
+                        if ("t".equals(value)) {
+                            setContentView(R.layout.activity_automatic_end);
+                            LinearLayout linearLayoutTapToContinue = (LinearLayout) findViewById(R.id.linearLayoutTapToContinue);
+                            linearLayoutTapToContinue.setOnClickListener(new View.OnClickListener() {
+                                public void onClick(View v) {
+                                    requestMethod(methodAutomaticEnd); // reset automatic end
+                                }
+                            });
+                        }
+                        break;
+                    case paramOpDisplayActive:
+                        switchDisplayActive.setChecked("t".equals(value));
+                        break;
+                    case paramOpDisplayBacklight:
+                        switchDisplayBacklight.setChecked("t".equals(value));
+                        break;
+                    case paramOpDisplayUpdateInterval:
+                        editTextDisplayUpdateInterval.setText(value);
+                        break;
+                    case paramOpBufferTemperatureUpdateInterval:
+                        editTextBufferTemperatureUpdateInterval.setText(value);
+                        break;
+                    case paramOpBufferTemperatureAutomaticControl:
+                        switchBufferTemperatureAutomaticControl.setChecked("t".equals(value));
+                        break;
+                    case paramOpBufferTemperatureSetpoint:
+                        editTextBufferTemperatureSetpoint.setText(value);
+                        break;
+                    case paramOpBufferTemperatureMaxError:
+                        editTextBufferTemperatureMaxError.setText(value);
+                        break;
+                    case paramOpServoSpeed:
+                        editTextServoSpeed.setText(value);
+                        break;
+                    default:
+                        break;
+                }
+            } catch (JSONException e) {
+                e.printStackTrace();
             }
-        }
+        });
     }
 
     private void onError(Throwable error) {
         // Handle the error
         disconnectDevice();
     }
-
-    // UI
 
     private void showHideUI() {
         // switch ramp
@@ -471,7 +495,6 @@ public class pfgeConfig extends AppCompatActivity implements ItemPickerDialogFra
         });
         showBtSelector();
     }
-
 
     public void showBtSelector() {
         List<BluetoothDevice> pairedDevices = bluetoothManager.getPairedDevicesList();
@@ -608,12 +631,6 @@ public class pfgeConfig extends AppCompatActivity implements ItemPickerDialogFra
         showHideUI();
     }
 
-    private MenuItem menuItemSync;
-    private MenuItem menuItemSet;
-    private MenuItem menuItemSaveProgram;
-    private MenuItem menuItemLoadProgram;
-    private MenuItem menuItemDeleteProgram;
-
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         MenuInflater inflater = getMenuInflater();
@@ -714,30 +731,46 @@ public class pfgeConfig extends AppCompatActivity implements ItemPickerDialogFra
         showFlashMessage("Error while deleting");
     }
 
-
-    List<Program> programs = new ArrayList<Program>();
-
     private boolean loadPrograms() {
         programs.clear();
         // defaults
-        programs.add(new Program(
-                "MidRange PFG Marker",
-                paramOpOnOff+"=f@"+paramOpPause+"=f@"+paramOpRamp+"=t@"+paramOpAngle+"=120@"+paramOpRampStart+"=1@"+paramOpRampEnd+"=25@"+paramOpRampDuration+"=24@"+paramOpBufferTemperatureAutomaticControl+"=t@"+paramOpBufferTemperatureSetpoint+"=14",
-                "NEB",
-                "N0342S",
-                "15–291 kb",
-                "0.5X TBE | 1% agarose | 6 volts/cm",
-                "https://international.neb.com/products/n0342-midrange-pfg-marker",
-                true
-        ));
+        try {
+            programs.add(new Program(
+                    "MidRange PFG Marker",
+                    new JSONObject()
+                            .put(paramOpOnOff,'f')
+                            .put(paramOpPause,'f')
+                            .put(paramOpRamp,'t')
+                            .put(paramOpAngle,120)
+                            .put(paramOpRampStart,1)
+                            .put(paramOpRampEnd,25)
+                            .put(paramOpRampDuration,24)
+                            .put(paramOpBufferTemperatureAutomaticControl,'t')
+                            .put(paramOpBufferTemperatureSetpoint,14),
+                    "NEB",
+                    "N0342S",
+                    "15–291 kb",
+                    "1% agarose | 0.5X TBE | 6 volts/cm",
+                    "https://international.neb.com/products/n0342-midrange-pfg-marker",
+                    true
+            ));
         programs.add(new Program(
                 "CHEF DNA Size Marker",
-                paramOpOnOff+"=f@"+paramOpPause+"=f@"+paramOpRamp+"=t@"+paramOpAngle+"=120@"+paramOpRampStart+"=26@"+paramOpRampEnd+"=228@"+paramOpRampDuration+"=26@"+paramOpBufferTemperatureAutomaticControl+"=t@"+paramOpBufferTemperatureSetpoint+"=14",
+                new JSONObject()
+                        .put(paramOpOnOff,'f')
+                        .put(paramOpPause,'f')
+                        .put(paramOpRamp,'t')
+                        .put(paramOpAngle,120)
+                        .put(paramOpRampStart,60)
+                        .put(paramOpRampEnd,120)
+                        .put(paramOpRampDuration,24)
+                        .put(paramOpBufferTemperatureAutomaticControl,'t')
+                        .put(paramOpBufferTemperatureSetpoint,14),
                 "BIO-RAD",
                 "1703605",
                 "0.225–2.2 Mb",
-                "0.5X TBE | 1% agarose | 6 volts/cm",
-                "https://www.researchgate.net/post/How_to_figure_out_a_PFGE_protocol",
+                "1% agarose | 0.5X TBE | 6 volts/cm",
+                "http://www.bio-rad.com/webroot/web/pdf/lsr/literature/M1703729B.pdf",
                 true
         ));
         // custom
@@ -747,10 +780,13 @@ public class pfgeConfig extends AppCompatActivity implements ItemPickerDialogFra
                 String[] programaPars = programa.split(programasStringSetSep);
                 programs.add(new Program(
                         programaPars[0],
-                        programaPars[1],
+                        new JSONObject(programaPars[1]),
                         programaPars[2]
                 ));
             }
+        }
+        } catch (JSONException e) {
+            e.printStackTrace();
         }
         return false;
     }
@@ -786,16 +822,20 @@ public class pfgeConfig extends AppCompatActivity implements ItemPickerDialogFra
         return false;
     }
 
+    private void loadProgramConfirmed(String programName) {
+        for (Program program : programs) {
+            if (program.name == programName) {
+                    processResponse(program.programConfig);
+                    showFlashMessage("Program loaded");
+                break;
+            }
+        }
+    }
+
     private void loadProgram(String programName) {
-        Map<String, String> programConfig = new HashMap<String, String>();
         String programDetails = "";
         for (Program program : programs) {
             if (program.name == programName) {
-                for (String value : program.programConfig.split("@")) {
-                    String param1 = value.split("=")[0];
-                    String param2 = value.split("=")[1];
-                    programConfig.put(param1, param2);
-                }
                 programDetails = program.getProgramDetail();
                 break;
             }
@@ -815,7 +855,7 @@ public class pfgeConfig extends AppCompatActivity implements ItemPickerDialogFra
                 .setPositiveButton("OK. LOAD", new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialog, int whichButton) {
-                        processResponse(programConfig);
+                        loadProgramConfirmed(programName);
                         showFlashMessage("Program loaded");
                     }
                 })
@@ -924,26 +964,6 @@ public class pfgeConfig extends AppCompatActivity implements ItemPickerDialogFra
                 .setNegativeButton(android.R.string.ok, null)
                 .show();
     }
-
-    private final BroadcastReceiver mReceiver = new BroadcastReceiver() {
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            final String action = intent.getAction();
-
-            if (action.equals(BluetoothAdapter.ACTION_STATE_CHANGED)) {
-                final int state = intent.getIntExtra(BluetoothAdapter.EXTRA_STATE,
-                        BluetoothAdapter.ERROR);
-                switch (state) {
-                    case BluetoothAdapter.STATE_OFF:
-                        requireTurnBtOn();
-                        break;
-                    case BluetoothAdapter.STATE_ON:
-                        connectDevice();
-                        break;
-                }
-            }
-        }
-    };
 
     private void showFlashMessage(String flashMessage) {
         toast.setText(flashMessage);

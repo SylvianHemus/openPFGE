@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="colorPrimary">#D81B60</color>
+    <color name="colorPrimaryDark">#a50f46</color>
+    <color name="colorAccent">#D81B60</color>
+    <color name="colorBackgroundFullScreenLayout">#eee</color>
+    <color name="colorTextFullScreenLayout">#555</color>
+    <color name="colorSectionTitle">#D81B60</color>
+    <color name="colorSectionSeparator">#D81B60</color>
+    <color name="colorBackgroundSplashScreenLayout">#D81B60</color>
+    <color name="colorToastBackground">#d8e560</color>
+    <color name="colorToastText">#000</color>
+</resources>
