@@ -142,6 +142,8 @@ void setup() {
   digitalWrite(peltier2Pin, LOW);
 
   // Motor init and center
+  moveMotor(170);
+  moveMotor(10);
   centerMotor();
 
   // BT series port initialice (For Mode AT 2)
@@ -291,8 +293,7 @@ void setNextWopAuto() {
   if (ramp) {
     if (runTimer.hasPassed((long) rampDuration * 3600)) {
       // Run end time reached
-      centerMotor();
-      runTimer.stop();
+      setOnOff(true);
       autoEnd = true;
     } else {
       wopAuto = map((long) runTimer.elapsed(), (long) 0, (long) rampDuration * 3600, (long) rampStart, (long) (rampEnd + 1)); // +1 to be able to reach the last ramp wop

@@ -41,7 +41,7 @@ bool displayActive = true; // update display info?
 int displayUpdateInterval = 2; // display update info interval (seconds)
 int lastDisplayState = -1;
 int lastDisplayParameter = 0;
-bool displayBacklight = false;
+bool displayBacklight = true;
 LiquidCrystal_I2C display(0x27, 16, 2); // Direction 0x27 & 16 cols & 2 rows
 
 // temperature control
@@ -61,9 +61,9 @@ int bufferTemperatureMaxError = 3; // max diference between current buffer tempe
 #define peltier2Pin 8
 
 // running parameters
-bool onoff = false; // System on/off
+bool onoff = true; // System on/off
 bool pause = false; // System paused on/off
-bool ramp = false; // System ramp on/off
+bool ramp = true; // System ramp on/off
 int angle = 120; // Turning angle
 int wop = 4; // between each movement in ramp off mode (seconds)
 int wopAuto = 0; // // between each movement in ramp on mode (seconds)
@@ -71,7 +71,7 @@ int wopAuto = 0; // // between each movement in ramp on mode (seconds)
 #define maxRampDuration 100 // ramp max duration (hours)
 int rampStart = 1; // initial time movement in ramp on mode (seconds)
 int rampEnd = 25; // final time movement in ramp on mode (seconds)
-int rampDuration = 24; // ramp time in ramp on mode (hours)
+int rampDuration = 12; // ramp time in ramp on mode (hours)
 
 // variables
 char inOutData[100]; // serial inputs & outpus
@@ -114,10 +114,10 @@ Chrono bufferTemperatureTimer(Chrono::SECONDS); // buffer temperature update tim
 
 void setup() {
   // Chronos
-  runTimer.stop();
-  stepTimer.stop();
-  bufferTemperatureTimer.stop();
-  displayTimer.stop();
+  runTimer.start();
+  stepTimer.start();
+  bufferTemperatureTimer.start();
+  displayTimer.start();
 
   // thermoresistor
   analogReference(EXTERNAL); // Connect AREF to 3.3V!
@@ -135,6 +135,8 @@ void setup() {
   digitalWrite(peltier2Pin, LOW);
 
   // Motor init and center
+  moveMotor(170);
+  moveMotor(10);
   centerMotor();
 
   // BT series port initialice (For Mode AT 2)
@@ -287,8 +289,7 @@ void setNextWopAuto() {
   if (ramp) {
     if (runTimer.hasPassed((long) rampDuration * 3600)) {
       // Run end time reached
-      centerMotor();
-      runTimer.stop();
+      setOnOff(true);
       autoEnd = true;
     } else {
       wopAuto = map((long) runTimer.elapsed(), (long) 0, (long) rampDuration * 3600, (long) rampStart, (long) (rampEnd + 1)); // +1 to be able to reach the last ramp wop
