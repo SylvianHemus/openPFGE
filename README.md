@@ -88,7 +88,7 @@ LCD I2C 16x2 [like this one](https://aliexpress.com/item/32786773241.html)
 ### Refigeration
 - 1 X Epoxy NTC thermistor temperature sensor 10K 1% [like this one](https://aliexpress.com/item/32654331022.html)
 - 3 X Diode 1A [like this one](https://components101.com/1n4007-diode)
-- 5 X MOSFET > 1.5A [like this one](https://components101.com/transistors/irf1010e-mosfet)
+- 5 X IRLB8743PBF MOSFET [like this one](https://www.infineon.com/dgdl/irlb8743pbf.pdf?fileId=5546d462533600a4015356605d6b2593)
 - 6 X 10K resistor
 
 ### Input / Output
