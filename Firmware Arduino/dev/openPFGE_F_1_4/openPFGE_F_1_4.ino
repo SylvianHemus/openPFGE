@@ -293,7 +293,7 @@ void setNextWopAuto() {
   if (ramp) {
     if (runTimer.hasPassed((long) rampDuration * 3600)) {
       // Run end time reached
-      setOnOff(true);
+      setOnOff(false);
       autoEnd = true;
     } else {
       wopAuto = map((long) runTimer.elapsed(), (long) 0, (long) rampDuration * 3600, (long) rampStart, (long) (rampEnd + 1)); // +1 to be able to reach the last ramp wop
