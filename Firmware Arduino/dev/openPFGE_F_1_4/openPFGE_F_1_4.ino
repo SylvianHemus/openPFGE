@@ -15,7 +15,7 @@
 #include <VarSpeedServo.h> // https://github.com/netlabtoolkit/VarSpeedServo
 #include <Wire.h>
 #include <LiquidCrystal_I2C.h> // https://github.com/johnrickman/LiquidCrystal_I2C
-#include <ArduinoJson.h>
+#include <ArduinoJson.h> // https://arduinojson.org/
 
 // firmware
 #define firmwareVersion 3
