@@ -30,7 +30,7 @@ VarSpeedServo servo; // the servo object
 #define servoUsTo 2500 // maximum microseconds // for ds3218
 #define waitForMotorMove true // programs wait until motor end moving
 int motorPosition = 0; // store current motor position (-1 = left, 0 = center, 1 = right)
-int servoSpeed = 150;  // 0=full speed, 1-255 slower to faster
+int servoSpeed = 50;  // 0=full speed, 1-255 slower to faster
 
 // bluetooth
 SoftwareSerial BT(10, 11); // TX, RX
@@ -61,9 +61,9 @@ int bufferTemperatureMaxError = 3; // max diference between current buffer tempe
 #define peltier2Pin 8
 
 // running parameters
-bool onoff = true; // System on/off
+bool onoff = false; // System on/off
 bool pause = false; // System paused on/off
-bool ramp = true; // System ramp on/off
+bool ramp = false; // System ramp on/off
 int angle = 120; // Turning angle
 int wop = 4; // between each movement in ramp off mode (seconds)
 int wopAuto = 0; // // between each movement in ramp on mode (seconds)
@@ -114,8 +114,8 @@ Chrono bufferTemperatureTimer(Chrono::SECONDS); // buffer temperature update tim
 
 void setup() {
   // Chronos
-  runTimer.start();
-  stepTimer.start();
+  runTimer.stop();
+  stepTimer.stop();
   bufferTemperatureTimer.start();
   displayTimer.start();
 
@@ -135,8 +135,6 @@ void setup() {
   digitalWrite(peltier2Pin, LOW);
 
   // Motor init and center
-  moveMotor(170);
-  moveMotor(10);
   centerMotor();
 
   // BT series port initialice (For Mode AT 2)
