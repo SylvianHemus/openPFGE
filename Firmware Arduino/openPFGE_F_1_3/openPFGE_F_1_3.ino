@@ -30,7 +30,7 @@ VarSpeedServo servo; // the servo object
 #define servoUsTo 2500 // maximum microseconds // for ds3218
 #define waitForMotorMove true // programs wait until motor end moving
 int motorPosition = 0; // store current motor position (-1 = left, 0 = center, 1 = right)
-int servoSpeed = 50;  // 0=full speed, 1-255 slower to faster
+int servoSpeed = 255;  // 0=full speed, 1-255 slower to faster
 
 // bluetooth
 SoftwareSerial BT(10, 11); // TX, RX
