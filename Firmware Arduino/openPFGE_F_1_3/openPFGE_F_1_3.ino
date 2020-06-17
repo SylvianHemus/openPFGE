@@ -11,10 +11,10 @@
 
 // libraries
 #include <SoftwareSerial.h>
-#include <Chrono.h>
-#include <VarSpeedServo.h>
+#include <Chrono.h> // https://github.com/SofaPirate/Chrono
+#include <VarSpeedServo.h> // https://github.com/netlabtoolkit/VarSpeedServo
 #include <Wire.h>
-#include <LiquidCrystal_I2C.h>
+#include <LiquidCrystal_I2C.h> // https://github.com/johnrickman/LiquidCrystal_I2C
 
 // firmware
 #define firmwareVersion 2
