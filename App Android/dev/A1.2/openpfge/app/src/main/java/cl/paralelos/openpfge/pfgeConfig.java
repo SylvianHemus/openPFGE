@@ -69,7 +69,7 @@ public class pfgeConfig extends AppCompatActivity implements ItemPickerDialogFra
     final String paramOpAngle = "a";
     final String paramOpWop = "w";
     final String paramOpAutoWop = "aw";
-    final String paramOpHasRun= "hr";
+    final String paramOpHasRun = "hr";
     final String paramOpAutoEnd = "ae";
     final String paramOpRampStart = "rs";
     final String paramOpRampEnd = "re";
@@ -80,6 +80,7 @@ public class pfgeConfig extends AppCompatActivity implements ItemPickerDialogFra
     final String paramOpBufferTemperature = "bt";
     final String paramOpBufferTemperatureUpdateInterval = "bu";
     final String paramOpBufferTemperatureAutomaticControl = "bc";
+    final String paramOpBufferTemperatureManualControlOn = "bm";
     final String paramOpBufferTemperatureSetpoint = "bs";
     final String paramOpBufferTemperatureMaxError = "be";
     final String paramOpServoSpeed = "ss";
@@ -92,12 +93,14 @@ public class pfgeConfig extends AppCompatActivity implements ItemPickerDialogFra
     Switch switchDisplayActive;
     Switch switchDisplayBacklight;
     Switch switchBufferTemperatureAutomaticControl;
+    Switch switchBufferTemperatureManualControlOn;
     LinearLayout wrapWop;
     LinearLayout wrapRampStart;
     LinearLayout wrapRampEnd;
     LinearLayout wrapRampDuration;
     LinearLayout wrapAutoWop;
     LinearLayout wrapBufferTemperatureUpdateSetpoint;
+    LinearLayout wrapBufferTemperatureMaxError;
     LinearLayout wrapDisplayUpdateInterval;
     EditText editTextAngle;
     EditText editTextWop;
@@ -195,7 +198,7 @@ public class pfgeConfig extends AppCompatActivity implements ItemPickerDialogFra
     }
 
     private JSONObject encodeParams() {
-        JSONObject params=new JSONObject();
+        JSONObject params = new JSONObject();
         try {
             params.put(paramOpOnOff, switchOnOff.isChecked() ? "t" : "f");
             params.put(paramOpPause, switchPause.isChecked() ? "t" : "f");
@@ -210,6 +213,7 @@ public class pfgeConfig extends AppCompatActivity implements ItemPickerDialogFra
             params.put(paramOpDisplayBacklight, switchDisplayBacklight.isChecked() ? "t" : "f");
             params.put(paramOpBufferTemperatureUpdateInterval, editTextBufferTemperatureUpdateInterval.getText().toString());
             params.put(paramOpBufferTemperatureAutomaticControl, switchBufferTemperatureAutomaticControl.isChecked() ? "t" : "f");
+            params.put(paramOpBufferTemperatureManualControlOn, switchBufferTemperatureManualControlOn.isChecked() ? "t" : "f");
             params.put(paramOpBufferTemperatureSetpoint, editTextBufferTemperatureSetpoint.getText().toString());
             params.put(paramOpBufferTemperatureMaxError, editTextBufferTemperatureMaxError.getText().toString());
             params.put(paramOpServoSpeed, editTextServoSpeed.getText().toString());
@@ -301,63 +305,65 @@ public class pfgeConfig extends AppCompatActivity implements ItemPickerDialogFra
 
     private void onMessageSent(String message) {
         // We sent a message! Handle it here.
+        //Log.d("Mensaje enviado", message);
     }
 
     private void onMessageReceived(String message) {
         // We received a message! Handle it here.
+        //Log.d("Mensaje recibido", message);
         try {
             JSONObject response = new JSONObject(message);
-        if (!response.has(methodParam)) {
-            showFlashMessage("Bad response from device");
-            return;
-        }
-        if (response.getString(methodParam).compareTo(methodWho)==0) {
-            if (response.getString(paramFirmwareVersion) == null) {
-                showFlashMessage("Device not recognized");
+            if (!response.has(methodParam)) {
+                showFlashMessage("Bad response from device");
                 return;
             }
-            firmwareVersion = Integer.parseInt(response.getString(paramFirmwareVersion));
+            if (response.getString(methodParam).compareTo(methodWho) == 0) {
+                if (response.getString(paramFirmwareVersion) == null) {
+                    showFlashMessage("Device not recognized");
+                    return;
+                }
+                firmwareVersion = Integer.parseInt(response.getString(paramFirmwareVersion));
+                if (firmwareVersion < minFirmwareVersionSupported) {
+                    showFlashMessage("Firmware version not supported\nPlease choose another device");
+                    selectBluetoothDevice();
+                    return;
+                }
+                requestMethod(methodSync);
+                setMainView();
+            }
+            if (firmwareVersion == 0) {
+                showFlashMessage("Firmware version is not set\nPlease start again");
+                return;
+            }
             if (firmwareVersion < minFirmwareVersionSupported) {
                 showFlashMessage("Firmware version not supported\nPlease choose another device");
                 selectBluetoothDevice();
                 return;
             }
-            requestMethod(methodSync);
-            setMainView();
-        }
-        if (firmwareVersion == 0) {
-            showFlashMessage("Firmware version is not set\nPlease start again");
-            return;
-        }
-        if (firmwareVersion < minFirmwareVersionSupported) {
-            showFlashMessage("Firmware version not supported\nPlease choose another device");
-            selectBluetoothDevice();
-            return;
-        }
-        if (response.getString(methodParam).compareTo(methodSet)==0) {
-            setMainView();
-            processResponse(response);
-            showFlashMessage("SET & SYNC done at " + getCurrentDate(null));
-            return;
-        }
-        if (response.getString(methodParam).compareTo(methodSync)==0) {
-            setMainView();
-            processResponse(response);
-            showFlashMessage("SYNC done at " + getCurrentDate(null));
-            return;
-        }
-        if (response.getString(methodParam).compareTo(methodAutomaticEnd)==0) {
-            processResponse(response);
-            return;
-        }
-        if (response.getString(methodParam).compareTo(methodUnknown)==0) {
-            showFlashMessage("Unkown method requested");
-            return;
-        }
-        if (response.getString(methodParam).compareTo(methodCommunicationError)==0) {
-            showFlashMessage("Communication error");
-            return;
-        }
+            if (response.getString(methodParam).compareTo(methodSet) == 0) {
+                setMainView();
+                processResponse(response);
+                showFlashMessage("SET & SYNC done at " + getCurrentDate(null));
+                return;
+            }
+            if (response.getString(methodParam).compareTo(methodSync) == 0) {
+                setMainView();
+                processResponse(response);
+                showFlashMessage("SYNC done at " + getCurrentDate(null));
+                return;
+            }
+            if (response.getString(methodParam).compareTo(methodAutomaticEnd) == 0) {
+                processResponse(response);
+                return;
+            }
+            if (response.getString(methodParam).compareTo(methodUnknown) == 0) {
+                showFlashMessage("Unkown method requested");
+                return;
+            }
+            if (response.getString(methodParam).compareTo(methodCommunicationError) == 0) {
+                showFlashMessage("Communication error");
+                return;
+            }
         } catch (JSONException e) {
             e.printStackTrace();
         }
@@ -431,6 +437,9 @@ public class pfgeConfig extends AppCompatActivity implements ItemPickerDialogFra
                     case paramOpBufferTemperatureAutomaticControl:
                         switchBufferTemperatureAutomaticControl.setChecked("t".equals(value));
                         break;
+                    case paramOpBufferTemperatureManualControlOn:
+                        switchBufferTemperatureManualControlOn.setChecked("t".equals(value));
+                        break;
                     case paramOpBufferTemperatureSetpoint:
                         editTextBufferTemperatureSetpoint.setText(value);
                         break;
@@ -472,8 +481,12 @@ public class pfgeConfig extends AppCompatActivity implements ItemPickerDialogFra
         // Buffer temperature
         if (switchBufferTemperatureAutomaticControl.isChecked()) {
             wrapBufferTemperatureUpdateSetpoint.setVisibility(View.VISIBLE);
+            wrapBufferTemperatureMaxError.setVisibility(View.VISIBLE);
+            switchBufferTemperatureManualControlOn.setVisibility(View.GONE);
         } else {
             wrapBufferTemperatureUpdateSetpoint.setVisibility(View.GONE);
+            wrapBufferTemperatureMaxError.setVisibility(View.GONE);
+            switchBufferTemperatureManualControlOn.setVisibility(View.VISIBLE);
         }
         // Display
         if (switchDisplayActive.isChecked()) {
@@ -576,6 +589,7 @@ public class pfgeConfig extends AppCompatActivity implements ItemPickerDialogFra
         switchDisplayActive = (Switch) findViewById(R.id.switchDisplayActive);
         switchDisplayBacklight = (Switch) findViewById(R.id.switchDisplayBacklight);
         switchBufferTemperatureAutomaticControl = (Switch) findViewById(R.id.switchBufferTemperatureAutomaticControl);
+        switchBufferTemperatureManualControlOn = (Switch) findViewById(R.id.switchBufferTemperatureManualControlOn);
 
         wrapWop = (LinearLayout) findViewById(R.id.wrapWop);
         wrapRampStart = (LinearLayout) findViewById(R.id.wrapRampStart);
@@ -583,6 +597,7 @@ public class pfgeConfig extends AppCompatActivity implements ItemPickerDialogFra
         wrapRampDuration = (LinearLayout) findViewById(R.id.wrapRampDuration);
         wrapAutoWop = (LinearLayout) findViewById(R.id.wrapAutoWop);
         wrapBufferTemperatureUpdateSetpoint = (LinearLayout) findViewById(R.id.wrapBufferTemperatureUpdateSetpoint);
+        wrapBufferTemperatureMaxError = (LinearLayout) findViewById(R.id.wrapBufferTemperatureMaxError);
         wrapDisplayUpdateInterval = (LinearLayout) findViewById(R.id.wrapDisplayUpdateInterval);
 
         editTextAngle = findViewById(R.id.editTextAngle);
@@ -738,15 +753,15 @@ public class pfgeConfig extends AppCompatActivity implements ItemPickerDialogFra
             programs.add(new Program(
                     "MidRange PFG Marker",
                     new JSONObject()
-                            .put(paramOpOnOff,'f')
-                            .put(paramOpPause,'f')
-                            .put(paramOpRamp,'t')
-                            .put(paramOpAngle,120)
-                            .put(paramOpRampStart,1)
-                            .put(paramOpRampEnd,25)
-                            .put(paramOpRampDuration,24)
-                            .put(paramOpBufferTemperatureAutomaticControl,'t')
-                            .put(paramOpBufferTemperatureSetpoint,14),
+                            .put(paramOpOnOff, 'f')
+                            .put(paramOpPause, 'f')
+                            .put(paramOpRamp, 't')
+                            .put(paramOpAngle, 120)
+                            .put(paramOpRampStart, 1)
+                            .put(paramOpRampEnd, 25)
+                            .put(paramOpRampDuration, 24)
+                            .put(paramOpBufferTemperatureAutomaticControl, 't')
+                            .put(paramOpBufferTemperatureSetpoint, 14),
                     "NEB",
                     "N0342S",
                     "15–291 kb",
@@ -754,37 +769,37 @@ public class pfgeConfig extends AppCompatActivity implements ItemPickerDialogFra
                     "https://international.neb.com/products/n0342-midrange-pfg-marker",
                     true
             ));
-        programs.add(new Program(
-                "CHEF DNA Size Marker",
-                new JSONObject()
-                        .put(paramOpOnOff,'f')
-                        .put(paramOpPause,'f')
-                        .put(paramOpRamp,'t')
-                        .put(paramOpAngle,120)
-                        .put(paramOpRampStart,60)
-                        .put(paramOpRampEnd,120)
-                        .put(paramOpRampDuration,24)
-                        .put(paramOpBufferTemperatureAutomaticControl,'t')
-                        .put(paramOpBufferTemperatureSetpoint,14),
-                "BIO-RAD",
-                "1703605",
-                "0.225–2.2 Mb",
-                "1% agarose | 0.5X TBE | 6 volts/cm",
-                "http://www.bio-rad.com/webroot/web/pdf/lsr/literature/M1703729B.pdf",
-                true
-        ));
-        // custom
-        Set<String> stringSetProgramas = settings.getStringSet(programasStringSetName, new HashSet<>());
-        if (!stringSetProgramas.isEmpty()) {
-            for (String programa : stringSetProgramas) {
-                String[] programaPars = programa.split(programasStringSetSep);
-                programs.add(new Program(
-                        programaPars[0],
-                        new JSONObject(programaPars[1]),
-                        programaPars[2]
-                ));
+            programs.add(new Program(
+                    "CHEF DNA Size Marker",
+                    new JSONObject()
+                            .put(paramOpOnOff, 'f')
+                            .put(paramOpPause, 'f')
+                            .put(paramOpRamp, 't')
+                            .put(paramOpAngle, 120)
+                            .put(paramOpRampStart, 60)
+                            .put(paramOpRampEnd, 120)
+                            .put(paramOpRampDuration, 24)
+                            .put(paramOpBufferTemperatureAutomaticControl, 't')
+                            .put(paramOpBufferTemperatureSetpoint, 14),
+                    "BIO-RAD",
+                    "1703605",
+                    "0.225–2.2 Mb",
+                    "1% agarose | 0.5X TBE | 6 volts/cm",
+                    "http://www.bio-rad.com/webroot/web/pdf/lsr/literature/M1703729B.pdf",
+                    true
+            ));
+            // custom
+            Set<String> stringSetProgramas = settings.getStringSet(programasStringSetName, new HashSet<>());
+            if (!stringSetProgramas.isEmpty()) {
+                for (String programa : stringSetProgramas) {
+                    String[] programaPars = programa.split(programasStringSetSep);
+                    programs.add(new Program(
+                            programaPars[0],
+                            new JSONObject(programaPars[1]),
+                            programaPars[2]
+                    ));
+                }
             }
-        }
         } catch (JSONException e) {
             e.printStackTrace();
         }
@@ -825,8 +840,8 @@ public class pfgeConfig extends AppCompatActivity implements ItemPickerDialogFra
     private void loadProgramConfirmed(String programName) {
         for (Program program : programs) {
             if (program.name == programName) {
-                    processResponse(program.programConfig);
-                    showFlashMessage("Program loaded");
+                processResponse(program.programConfig);
+                showFlashMessage("Program loaded");
                 break;
             }
         }
@@ -843,7 +858,7 @@ public class pfgeConfig extends AppCompatActivity implements ItemPickerDialogFra
 
         // linkify
         final TextView message = new TextView(getApplicationContext());
-        message.setPadding(64,64,64,64);
+        message.setPadding(64, 64, 64, 64);
         final SpannableString s = new SpannableString(programDetails);
         Linkify.addLinks(s, Linkify.WEB_URLS);
         message.setText(s);
@@ -960,7 +975,7 @@ public class pfgeConfig extends AppCompatActivity implements ItemPickerDialogFra
     private void showAbout() {
         new AlertDialog.Builder(pfgeConfig.this)
                 .setTitle("About")
-                .setMessage("App version: " + firmwareVersion +"Min firmware supported version: " + minFirmwareVersionSupported  + "\nSupport: https://gitlab.com/diegusleik/openpfge")
+                .setMessage("App version: " + firmwareVersion + "Min firmware supported version: " + minFirmwareVersionSupported + "\nSupport: https://gitlab.com/diegusleik/openpfge")
                 .setNegativeButton(android.R.string.ok, null)
                 .show();
     }

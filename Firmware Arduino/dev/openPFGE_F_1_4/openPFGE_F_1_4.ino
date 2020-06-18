@@ -21,14 +21,12 @@
 #define firmwareVersion 3
 
 // debug
-#define serialDebug true // should the program outputs the debug by serial port
+#define serialDebug false // should the program outputs the debug by serial port
 bool serialStarted = false; // serial started?
 
 // motor servo
 VarSpeedServo servo; // the servo object
 #define servoPin 9 // PWM signal pin
-#define servoUsFrom 500 // minimum microseconds // for ds3218
-#define servoUsTo 2500 // maximum microseconds // for ds3218
 #define waitForMotorMove true // programs wait until motor end moving
 int motorPosition = 0; // store current motor position (-1 = left, 0 = center, 1 = right)
 int servoSpeed = 150;  // 0=full speed, 1-255 slower to faster
@@ -48,9 +46,10 @@ LiquidCrystal_I2C display(0x27, 16, 2); // Direction 0x27 & 16 cols & 2 rows
 // temperature control
 int bufferTemperature = 0; // current read of buffer temperature
 bool bufferTemperatureAutomaticControl = false; // if temperature of the buffer is automaticlly controlled by the refrigeration system
+bool bufferTemperatureManualControlOn = false; // if temperature of the buffer is manually turned on
 bool bufferCoolingOn = false;
 int bufferTemperatureSetpoint = 15; // optimal buffer temperature (°C)
-int bufferTemperatureMaxError = 3; // max diference between current buffer temperature and set point allowed before start the cooling system
+int bufferTemperatureMaxError = 2; // max diference between current buffer temperature and set point allowed before start the cooling system
 #define bufferTemperatureSetpointMin 10
 #define bufferTemperatureSetpointMax 30
 #define bufferTemperatureMaxErrorMin 1
@@ -78,7 +77,7 @@ int rampDuration = 24; // ramp time in ramp on mode (hours)
 bool autoEnd = false; // whether the program has automaticlly ended
 #define maxIntervalUpdate 60 // 60 seconds for maximum update interval
 int bufferTemperatureUpdateInterval = 10; // buffer temperature update interval (seconds)
-const int jsonCapacity =  20 * JSON_OBJECT_SIZE(1); // json document capacity
+const int jsonCapacity =  30 * JSON_OBJECT_SIZE(1); // json document capacity
 StaticJsonDocument<jsonCapacity> jsonDoc; // Allocate the JsonDocument
 JsonObject jsonObj; // json object
 DeserializationError jsonErr;
@@ -109,6 +108,7 @@ DeserializationError jsonErr;
 #define paramOpBufferTemperature "bt"
 #define paramOpBufferTemperatureUpdateInterval "bu"
 #define paramOpBufferTemperatureAutomaticControl "bc"
+#define paramOpBufferTemperatureManualControlOn "bm"
 #define paramOpBufferTemperatureSetpoint "bs"
 #define paramOpBufferTemperatureMaxError "be"
 #define paramOpServoSpeed "ss"
@@ -142,8 +142,6 @@ void setup() {
   digitalWrite(peltier2Pin, LOW);
 
   // Motor init and center
-  moveMotor(170);
-  moveMotor(10);
   centerMotor();
 
   // BT series port initialice (For Mode AT 2)
@@ -251,6 +249,9 @@ void setParams() {
   if (jsonObj.containsKey(paramOpBufferTemperatureAutomaticControl)) {
     bufferTemperatureAutomaticControl = stob(jsonObj[paramOpBufferTemperatureAutomaticControl]);
   }
+  if (jsonObj.containsKey(paramOpBufferTemperatureManualControlOn)) {
+    bufferTemperatureManualControlOn = stob(jsonObj[paramOpBufferTemperatureManualControlOn]);
+  }
   if (jsonObj.containsKey(paramOpBufferTemperatureSetpoint)) {
     bufferTemperatureSetpoint = constrain(stoi(jsonObj[paramOpBufferTemperatureSetpoint]), bufferTemperatureSetpointMin, bufferTemperatureSetpointMax);
   }
@@ -309,7 +310,7 @@ void centerMotor() {
 void moveMotor(int finalAngle) {
   servo.attach(servoPin);
   delay(15);
-  servo.write(map(finalAngle, 0, 180, servoUsFrom, servoUsTo), servoSpeed, waitForMotorMove);
+  servo.write(finalAngle, servoSpeed, waitForMotorMove);
   servo.detach();
 }
 
@@ -477,24 +478,38 @@ void loopBufferTemperature() {
 
   if (bufferTemperatureAutomaticControl) {
     // decide if cooling is needed
-    if (bufferTemperature + bufferTemperatureMaxError > bufferTemperatureSetpoint && !bufferCoolingOn) { // start cooling
-      digitalWrite(pumpPin, HIGH);
-      digitalWrite(fan1Pin, HIGH);
-      digitalWrite(fan2Pin, HIGH);
-      digitalWrite(peltier1Pin, HIGH);
-      digitalWrite(peltier2Pin, HIGH);
-      bufferCoolingOn = true;
+    if (abs(bufferTemperature - bufferTemperatureSetpoint) > bufferTemperatureMaxError) { // start cooling
+      setOnOffBufferCooling(true);
     } else { // stop cooling
-      if (bufferCoolingOn) { // just if it is cooling
-        digitalWrite(pumpPin, LOW);
-        digitalWrite(fan1Pin, LOW);
-        digitalWrite(fan2Pin, LOW);
-        digitalWrite(peltier1Pin, LOW);
-        digitalWrite(peltier2Pin, LOW);
-        bufferCoolingOn = false;
-      }
+      setOnOffBufferCooling(false);
+    }
+  } else { // check manual control
+    if (bufferTemperatureManualControlOn) {
+      setOnOffBufferCooling(true);
+    } else {
+      setOnOffBufferCooling(false);
     }
   }
+}
+
+void setOnOffBufferCooling(bool newBufferCoolingOn) {
+  if (bufferCoolingOn == newBufferCoolingOn) {
+    return;
+  }
+  if (newBufferCoolingOn) {
+    digitalWrite(pumpPin, HIGH);
+    digitalWrite(fan1Pin, HIGH);
+    digitalWrite(fan2Pin, HIGH);
+    digitalWrite(peltier1Pin, HIGH);
+    digitalWrite(peltier2Pin, HIGH);
+  } else {
+    digitalWrite(pumpPin, LOW);
+    digitalWrite(fan1Pin, LOW);
+    digitalWrite(fan2Pin, LOW);
+    digitalWrite(peltier1Pin, LOW);
+    digitalWrite(peltier2Pin, LOW);
+  }
+  bufferCoolingOn = newBufferCoolingOn;
 }
 
 void setOnOff(bool newOnOff) {
@@ -558,6 +573,7 @@ void encodeCurrent() {
   jsonDoc[paramOpDisplayUpdateInterval] = displayUpdateInterval;
   jsonDoc[paramOpBufferTemperatureUpdateInterval] = bufferTemperatureUpdateInterval;
   jsonDoc[paramOpBufferTemperatureAutomaticControl] = btos(bufferTemperatureAutomaticControl);
+  jsonDoc[paramOpBufferTemperatureManualControlOn] = btos(bufferTemperatureManualControlOn);
   jsonDoc[paramOpBufferTemperatureSetpoint] = bufferTemperatureSetpoint;
   jsonDoc[paramOpBufferTemperatureMaxError] = bufferTemperatureMaxError;
   jsonDoc[paramOpDisplayBacklight] = btos(displayBacklight);
@@ -568,8 +584,8 @@ void btSendMessage() {
   serializeJson(jsonDoc, BT);
   BT.println();
   /*Serial.println("sending");
-  serializeJson(jsonDoc, Serial);
-  Serial.println("");*/
+    serializeJson(jsonDoc, Serial);
+    Serial.println("");*/
 }
 
 bool requestBtData() {
@@ -577,9 +593,9 @@ bool requestBtData() {
     jsonErr = deserializeJson(jsonDoc, BT);
     if (!jsonErr) {
       jsonObj = jsonDoc.as<JsonObject>();
-/*  Serial.println("recibiendo");
-      serializeJson(jsonDoc, Serial);
-  Serial.println("");*/
+      /*Serial.println("recibiendo");
+            serializeJson(jsonDoc, Serial);
+        Serial.println("");*/
       return true;
     }
   }
@@ -654,12 +670,12 @@ int readTemperature() {
   average = SERIESRESISTOR / average;
 
   float steinhart;
-  steinhart = average / THERMISTORNOMINAL;     // (R/Ro)
-  steinhart = log(steinhart);                  // ln(R/Ro)
-  steinhart /= BCOEFFICIENT;                   // 1/B * ln(R/Ro)
+  steinhart = average / THERMISTORNOMINAL;          // (R/Ro)
+  steinhart = log(steinhart);                       // ln(R/Ro)
+  steinhart /= BCOEFFICIENT;                        // 1/B * ln(R/Ro)
   steinhart += 1.0 / (TEMPERATURENOMINAL + 273.15); // + (1/To)
-  steinhart = 1.0 / steinhart;                 // Invert
-  steinhart -= 273.15;
+  steinhart = 1.0 / steinhart;                      // Invert
+  steinhart -= 273.15;                              // convert to C
 
   return (int) steinhart;
 }

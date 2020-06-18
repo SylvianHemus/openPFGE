@@ -28,7 +28,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:paddingBottom="8dp"
-            android:text="Main Config"
+            android:text="Main"
             android:textColor="@color/colorSectionTitle"
             android:textSize="18sp"
             android:textStyle="bold" />
@@ -68,33 +68,6 @@
             android:showText="false"
             android:text="Ramp"
             android:tooltipText="Ramp On/Off" />
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:gravity="center_vertical"
-            android:orientation="horizontal"
-            >
-
-            <TextView
-                android:id="@+id/textView3"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="2"
-                android:text="Angle [°]"
-                android:textColor="@android:color/background_dark"
-                android:tooltipText="Rotation angle" />
-
-            <EditText
-                android:id="@+id/editTextAngle"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:ems="10"
-                android:inputType="number"
-                android:textAlignment="center" />
-
-        </LinearLayout>
 
         <LinearLayout
             android:id="@+id/wrapWop"
@@ -137,7 +110,7 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="2"
-                android:text="Ramp Start [s]"
+                android:text="Ramp / Start [s]"
                 android:textColor="@android:color/background_dark"
                 android:tooltipText="Wait on position start time" />
 
@@ -165,7 +138,7 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="2"
-                android:text="Ramp End [s]"
+                android:text="Ramp / End [s]"
                 android:textColor="@android:color/background_dark"
                 android:tooltipText="Wait on position end time" />
 
@@ -193,7 +166,7 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="2"
-                android:text="Ramp Duration [h]"
+                android:text="Ramp / Duration [h]"
                 android:textColor="@android:color/background_dark"
                 android:tooltipText="Ramp duration time" />
 
@@ -243,6 +216,33 @@
             android:layout_height="wrap_content"
             android:gravity="center_vertical"
             android:orientation="horizontal"
+            >
+
+            <TextView
+                android:id="@+id/textView3"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="2"
+                android:text="Angle [°]"
+                android:textColor="@android:color/background_dark"
+                android:tooltipText="Rotation angle" />
+
+            <EditText
+                android:id="@+id/editTextAngle"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:ems="10"
+                android:inputType="number"
+                android:textAlignment="center" />
+
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
             android:paddingTop="8dp"
             android:paddingBottom="8dp">
 
@@ -273,7 +273,7 @@
             android:layout_height="wrap_content"
             android:paddingTop="16dp"
             android:paddingBottom="8dp"
-            android:text="Temperature control"
+            android:text="Buffer"
             android:textColor="@color/colorSectionTitle"
             android:textSize="18sp"
             android:textStyle="bold" />
@@ -296,7 +296,7 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="2"
-                android:text="Buffer temperature [°C]"
+                android:text="Temperature [°C]"
                 android:textColor="@android:color/background_dark"
                 android:tooltipText="Current buffer temperature" />
 
@@ -320,8 +320,19 @@
             android:paddingTop="8dp"
             android:paddingBottom="8dp"
             android:showText="false"
-            android:text="Buffer temperature automatic control"
+            android:text="Automatic Control"
             android:tooltipText="Buffer temperature automatic control On/Off"/>
+
+        <Switch
+            android:id="@+id/switchBufferTemperatureManualControlOn"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+
+            android:paddingTop="8dp"
+            android:paddingBottom="8dp"
+            android:showText="false"
+            android:text="Manual Control"
+            android:tooltipText="Buffer temperature manual control On/Off"/>
 
 
         <LinearLayout
@@ -337,7 +348,7 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="2"
-                android:text="Buffer temperature set point [°C]"
+                android:text="Set point [°C]"
                 android:textColor="@android:color/background_dark"
                 android:tooltipText="Buffer temperature set point" />
 
@@ -366,7 +377,7 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="2"
-                android:text="Buffer temperature max error [°C]"
+                android:text="Max error [°C]"
                 android:textColor="@android:color/background_dark"
                 android:tooltipText="Buffer temperature max error" />
 
