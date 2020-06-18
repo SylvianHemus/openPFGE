@@ -1,3 +1,8 @@
+// Target Circuit Version = openPFGE H1.3
+
+// firmware
+#define firmwareVersion 3
+
 // connections
 // servo: Pin 9 (& 5v (4.8 - 7.2 V) to power source)
 // thermoresistor: GND and A0 (& 10 kohm from Pin A0 to 3.3V && wire 3.3V with AREF on arduino)
@@ -16,9 +21,6 @@
 #include <Wire.h>
 #include <LiquidCrystal_I2C.h> // https://github.com/johnrickman/LiquidCrystal_I2C
 #include <ArduinoJson.h> // https://arduinojson.org/
-
-// firmware
-#define firmwareVersion 3
 
 // debug
 #define serialDebug false // should the program outputs the debug by serial port

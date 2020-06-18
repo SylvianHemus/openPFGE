@@ -975,7 +975,9 @@ public class pfgeConfig extends AppCompatActivity implements ItemPickerDialogFra
     private void showAbout() {
         new AlertDialog.Builder(pfgeConfig.this)
                 .setTitle("About")
-                .setMessage("App version: " + firmwareVersion + "Min firmware supported version: " + minFirmwareVersionSupported + "\nSupport: https://gitlab.com/diegusleik/openpfge")
+                .setMessage("App version: " + getResources().getString(R.string.app_version) + "\n" +
+                        "Min firmware supported version: " + minFirmwareVersionSupported + "\n" +
+                        "Support: https://gitlab.com/diegusleik/openpfge")
                 .setNegativeButton(android.R.string.ok, null)
                 .show();
     }
