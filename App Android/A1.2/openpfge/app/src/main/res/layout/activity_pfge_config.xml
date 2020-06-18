@@ -273,7 +273,7 @@
             android:layout_height="wrap_content"
             android:paddingTop="16dp"
             android:paddingBottom="8dp"
-            android:text="Buffer"
+            android:text="Buffer cooling"
             android:textColor="@color/colorSectionTitle"
             android:textSize="18sp"
             android:textStyle="bold" />
@@ -296,7 +296,7 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="2"
-                android:text="Temperature [°C]"
+                android:text="Current Temperature [°C]"
                 android:textColor="@android:color/background_dark"
                 android:tooltipText="Current buffer temperature" />
 
@@ -313,17 +313,6 @@
         </LinearLayout>
 
         <Switch
-            android:id="@+id/switchBufferTemperatureAutomaticControl"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-
-            android:paddingTop="8dp"
-            android:paddingBottom="8dp"
-            android:showText="false"
-            android:text="Automatic Control"
-            android:tooltipText="Buffer temperature automatic control On/Off"/>
-
-        <Switch
             android:id="@+id/switchBufferTemperatureManualControlOn"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -333,6 +322,17 @@
             android:showText="false"
             android:text="Manual Control"
             android:tooltipText="Buffer temperature manual control On/Off"/>
+
+        <Switch
+            android:id="@+id/switchBufferTemperatureAutomaticControl"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+
+            android:paddingTop="8dp"
+            android:paddingBottom="8dp"
+            android:showText="false"
+            android:text="Automatic Control"
+            android:tooltipText="Buffer temperature automatic control On/Off"/>
 
 
         <LinearLayout

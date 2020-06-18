@@ -27,6 +27,8 @@ bool serialStarted = false; // serial started?
 // motor servo
 VarSpeedServo servo; // the servo object
 #define servoPin 9 // PWM signal pin
+#define servoUsFrom 500 // minimum microseconds // for ds3218
+#define servoUsTo 2500 // maximum microseconds // for ds3218
 #define waitForMotorMove true // programs wait until motor end moving
 int motorPosition = 0; // store current motor position (-1 = left, 0 = center, 1 = right)
 int servoSpeed = 150;  // 0=full speed, 1-255 slower to faster
@@ -308,9 +310,9 @@ void centerMotor() {
 }
 
 void moveMotor(int finalAngle) {
-  servo.attach(servoPin);
-  delay(15);
+  servo.attach(servoPin,servoUsFrom,servoUsTo);
   servo.write(finalAngle, servoSpeed, waitForMotorMove);
+  servo.wait();
   servo.detach();
 }
 
