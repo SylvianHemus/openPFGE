@@ -312,7 +312,7 @@ void centerMotor() {
 }
 
 void moveMotor(int finalAngle) {
-  servo.attach(servoPin,servoUsFrom,servoUsTo);
+  servo.attach(servoPin, servoUsFrom, servoUsTo);
   servo.write(finalAngle, servoSpeed, waitForMotorMove);
   servo.wait();
   servo.detach();
@@ -341,19 +341,16 @@ void loopDisplay() {
           display.print(secondsToTime(runTimer.elapsed()));
         } else { // system on
           if (lastDisplayState != 3) {
-            display.clear();
             lastDisplayParameter = 0;
           }
           lastDisplayState = 3;
+          display.clear();
 
           display.setCursor(0, 0);
           display.print(F("Running "));
 
           // Timer
           display.print(secondsToTime(runTimer.elapsed()));
-
-          display.setCursor(0, 1);
-          display.print("                ");
           display.setCursor(0, 1);
 
           // Angle
@@ -482,10 +479,11 @@ void loopBufferTemperature() {
 
   if (bufferTemperatureAutomaticControl) {
     // decide if cooling is needed
-    if (abs(bufferTemperature - bufferTemperatureSetpoint) > bufferTemperatureMaxError) { // start cooling
+    if (bufferTemperature > bufferTemperatureSetpoint + bufferTemperatureMaxError) { // start cooling
       setOnOffBufferCooling(true);
-    } else { // stop cooling
-      setOnOffBufferCooling(false);
+    } else {
+      if (bufferTemperature < bufferTemperatureSetpoint) // stop cooling if temperature reaches set point (-1)
+        setOnOffBufferCooling(false);
     }
   } else { // check manual control
     if (bufferTemperatureManualControlOn) {
