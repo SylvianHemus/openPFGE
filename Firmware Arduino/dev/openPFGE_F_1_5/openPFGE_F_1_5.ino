@@ -29,8 +29,8 @@ bool serialStarted = false; // serial started?
 // motor servo
 VarSpeedServo servo; // the servo object
 #define servoPin 9 // PWM signal pin
-#define servoUsFrom 1000 // minimum microseconds // for ds3218
-#define servoUsTo 2000 // maximum microseconds // for ds3218
+#define servoUsFrom 850 // minimum microseconds // for ds3218
+#define servoUsTo 2150 // maximum microseconds // for ds3218
 #define waitForMotorMove true // programs wait until motor end moving
 int motorPosition = 0; // store current motor position (-1 = left, 0 = center, 1 = right)
 int servoSpeed = 255;  // 0=full speed, 1-255 slower to faster
